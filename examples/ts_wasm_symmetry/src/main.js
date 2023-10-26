@@ -140,23 +140,41 @@ async function run() {
     }
 
     console.log("### Pure JS Message Values ###");
-    {
-        let messageJsonObject = sortObjectKeys(JSON.parse(messageJson));
+    let messageJsonObject = sortObjectKeys(JSON.parse(messageJson));
 
-        console.log(`Pure JS (including outer and inner signatures) json string: `, JSON.stringify(messageJsonObject));
-        console.log("Pure JS (including outer and inner signatures) object:", messageJsonObject);
-        console.log("Pure JS (including outer and inner signatures) blake3:", blake3FromObj(messageJsonObject));
+    console.log(`Pure JS (including outer and inner signatures) json string: `, JSON.stringify(messageJsonObject));
+    console.log("Pure JS (including outer and inner signatures) object:", messageJsonObject);
+    console.log("Pure JS (including outer and inner signatures) blake3:", blake3FromObj(messageJsonObject));
 
-        let messageJsonObjectNoOuter = messageJsonObject;
-        messageJsonObjectNoOuter.external_metadata.signature = "";
-        console.log(`Pure JS (not including outer) object: `, messageJsonObjectNoOuter);
-        console.log(`Pure JS (not including outer - manual) blake3: `, blake3FromObj(messageJsonObjectNoOuter));
-        console.log(`Pure JS (not including outer - automatic) blake3: `, blake3FromObj(messageJsonObjectNoOuter));
+    let messageJsonObjectNoOuter = JSON.parse(JSON.stringify(messageJsonObject));
+    messageJsonObjectNoOuter.external_metadata.signature = "";
+    console.log(`Pure JS (not including outer) object: `, messageJsonObjectNoOuter);
+    console.log(`Pure JS (not including outer - manual) blake3: `, blake3FromObj(messageJsonObjectNoOuter));
 
-        let messageJsonObjectNoInner = messageJsonObjectNoOuter;
-        messageJsonObjectNoInner.body.unencrypted.internal_metadata.signature = "";
-        console.log(`Pure JS (not including inner) string: `, JSON.stringify(messageJsonObjectNoInner.body.unencrypted));
-        console.log(`Pure JS (not including inner) blake3: `, blake3FromObj(messageJsonObjectNoInner.body.unencrypted));
+    let messageJsonObjectNoInner = JSON.parse(JSON.stringify(messageJsonObjectNoOuter));
+    messageJsonObjectNoInner.body.unencrypted.internal_metadata.signature = "";
+    console.log(`Pure JS (not including inner) string: `, JSON.stringify(messageJsonObjectNoInner.body.unencrypted));
+    console.log(`Pure JS (not including inner) blake3: `, blake3FromObj(messageJsonObjectNoInner.body.unencrypted));
+
+    const pureJSValues = {
+        jsonString: JSON.stringify(messageJsonObject),
+        blake3Hash: blake3FromObj(messageJsonObject),
+        blake3Hash_outer_empty: blake3FromObj(messageJsonObjectNoOuter),
+        blake3Hash_inner_empty: blake3FromObj(messageJsonObjectNoInner.body.unencrypted)
+    };
+
+    // Compare the Pure JS values with the wrappedMessageValues
+    console.log("Comparing the Pure JS values...");
+    let mismatchFound = false;
+    for (const key in pureJSValues) {
+        if (JSON.stringify(pureJSValues[key]) !== JSON.stringify(wrappedMessageValues[key])) {
+            console.log(`Mismatch found in ${key}`);
+            mismatchFound = true;
+        }
+    }
+
+    if (!mismatchFound) {
+        console.log("All values match for Wrapped Message Values and Pure JS Message Values");
     }
 }
 
