@@ -1,18 +1,19 @@
 import { ShinkaiMessage } from "../shinkai_message/shinkai_message";
+import { UnencryptedMessageBody } from "../shinkai_message/shinkai_message_body";
 
-class ShinkaiSubidentityType {
+export class ShinkaiSubidentityType {
   static Agent = "agent";
   static Device = "device";
 }
 
-class ShinkaiNameError extends Error {
+export class ShinkaiNameError extends Error {
   constructor(message: string) {
     super(message);
     this.name = "ShinkaiNameError";
   }
 }
 
-class ShinkaiName {
+export class ShinkaiName {
   fullName: string;
   nodeName: string;
   profileName: string | null;
@@ -21,7 +22,6 @@ class ShinkaiName {
 
   constructor(rawName: string) {
     const correctedName = ShinkaiName.correctNodeName(rawName);
-    // Add your own validation logic here...
 
     const parts = correctedName.split("/");
     this.nodeName = parts[0];
@@ -40,7 +40,10 @@ class ShinkaiName {
       return true;
     } catch (err) {
       if (err instanceof Error) {
-        console.info(`Validation error: ${err.message}`);
+        if (process.env.NODE_ENV !== 'test') {
+          console.error(`Validation error: ${shinkaiName}`);
+          console.info(err.message);
+        }
       }
       return false;
     }
@@ -59,7 +62,11 @@ class ShinkaiName {
     }
 
     if (!parts[0].startsWith("@@") || !parts[0].endsWith(".shinkai")) {
-      console.error(`Validation error: ${rawName}`);
+      if (process.env.NODE_ENV !== 'test') {
+        console.error(
+          `Node part of the name should start with '@@' and end with '.shinkai'.`
+        );
+      }
       throw new Error(
         "Node part of the name should start with '@@' and end with '.shinkai'."
       );
@@ -67,9 +74,11 @@ class ShinkaiName {
 
     const nodeRegex = /^@@[a-zA-Z0-9_\.]+\.shinkai$/;
     if (!nodeRegex.test(parts[0])) {
-      console.error(
-        `Node part of the name contains invalid characters: ${rawName}`
-      );
+      if (process.env.NODE_ENV !== 'test') {
+        console.error(
+          `Node part of the name contains invalid characters: ${rawName}`
+        );
+      }
       throw new Error("Node part of the name contains invalid characters.");
     }
 
@@ -80,7 +89,9 @@ class ShinkaiName {
 
       if (index === 0) {
         if (part.includes("/")) {
-          console.error(`Root node name cannot contain '/': ${rawName}`);
+          if (process.env.NODE_ENV !== 'test') {
+            console.error(`Root node name cannot contain '/': ${rawName}`);
+          }
           throw new Error("Root node name cannot contain '/'.");
         }
         continue;
@@ -93,16 +104,20 @@ class ShinkaiName {
           part === ShinkaiSubidentityType.Device
         )
       ) {
-        console.error(
-          `The third part should either be 'agent' or 'device': ${rawName}`
-        );
+        if (process.env.NODE_ENV !== 'test') {
+          console.error(
+            `The third part should either be 'agent' or 'device': ${rawName}`
+          );
+        }
         throw new Error("The third part should either be 'agent' or 'device'.");
       }
 
       if (index === 3 && !partRegex.test(part)) {
-        console.error(
-          `The fourth part (name after 'agent' or 'device') should be alphanumeric or underscore: ${rawName}`
-        );
+        if (process.env.NODE_ENV !== 'test') {
+          console.error(
+            `The fourth part (name after 'agent' or 'device') should be alphanumeric or underscore: ${rawName}`
+          );
+        }
         throw new Error(
           "The fourth part (name after 'agent' or 'device') should be alphanumeric or underscore."
         );
@@ -113,9 +128,11 @@ class ShinkaiName {
         index !== 2 &&
         (!partRegex.test(part) || part.includes(".shinkai"))
       ) {
-        console.error(
-          `Name parts should be alphanumeric or underscore and not contain '.shinkai': ${rawName}`
-        );
+        if (process.env.NODE_ENV !== 'test') {
+          console.error(
+            `Name parts should be alphanumeric or underscore and not contain '.shinkai': ${rawName}`
+          );
+        }
         throw new Error(
           "Name parts should be alphanumeric or underscore and not contain '.shinkai'."
         );
@@ -127,9 +144,11 @@ class ShinkaiName {
       (parts[2] === ShinkaiSubidentityType.Agent ||
         parts[2] === ShinkaiSubidentityType.Device)
     ) {
-      console.error(
-        `If type is 'agent' or 'device', a fourth part is expected: ${rawName}`
-      );
+      if (process.env.NODE_ENV !== 'test') {
+        console.error(
+          `If type is 'agent' or 'device', a fourth part is expected: ${rawName}`
+        );
+      }
       throw new Error(
         "If type is 'agent' or 'device', a fourth part is expected."
       );
@@ -199,8 +218,8 @@ class ShinkaiName {
     message: ShinkaiMessage
   ): ShinkaiName {
     // Check if outer encrypted and return error if so
-    if (message.body.type !== "Unencrypted") {
-      throw new Error("Message body missing");
+    if (!(message.body instanceof UnencryptedMessageBody)) {
+      throw new Error("Message body missing or not unencrypted");
     }
 
     let node;
@@ -212,8 +231,9 @@ class ShinkaiName {
       );
     }
 
-    const senderSubidentity = message.body.internal_metadata.senderSubidentity
-      ? `/${message.body.internal_metadata.senderSubidentity}`
+    const senderSubidentity = message.body.unencrypted.internal_metadata
+      .sender_subidentity
+      ? `/${message.body.unencrypted.internal_metadata.sender_subidentity}`
       : "";
 
     try {
@@ -227,7 +247,7 @@ class ShinkaiName {
     message: ShinkaiMessage
   ): ShinkaiName {
     // Check if the message is encrypted
-    if (message.body.type !== "Unencrypted") {
+    if (!(message.body instanceof UnencryptedMessageBody)) {
       throw new Error("Cannot process encrypted ShinkaiMessage");
     }
 
@@ -240,9 +260,9 @@ class ShinkaiName {
       );
     }
 
-    const recipientSubidentity = message.body.internal_metadata
-      .recipientSubidentity
-      ? `/${message.body.internal_metadata.recipientSubidentity}`
+    const recipientSubidentity = message.body.unencrypted.internal_metadata
+      .recipient_subidentity
+      ? `/${message.body.unencrypted.internal_metadata.recipient_subidentity}`
       : "";
 
     try {

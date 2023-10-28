@@ -1,53 +1,30 @@
-import { MessageSchemaType, TSEncryptionMethod } from "./schema_types";
+import { MessageSchemaType, TSEncryptionMethod } from "../schemas/schema_types";
+import { ExternalMetadata } from "./shinkai_external_metadata";
+import { EncryptedMessageBody, MessageBody } from "./shinkai_message_body";
 
-export interface InternalMetadata {
-  sender_subidentity: string;
-  recipient_subidentity: string;
-  inbox: string;
-  encryption: keyof typeof TSEncryptionMethod;
-}
-
-export interface ExternalMetadata {
-  sender: string;
-  recipient: string;
-  scheduled_time: string;
-  signature: string;
-  other: string;
-  intra_sender: string;
-}
-
-export interface EncryptedShinkaiData {
-  content: string;
-}
-
-export interface ShinkaiData {
-  message_raw_content: string;
-  message_content_schema: MessageSchemaType;
-}
-
-export type MessageData = { encrypted: EncryptedShinkaiData } | { unencrypted: ShinkaiData };
-
-export interface EncryptedShinkaiBody {
-  content: string;
-}
-
-export interface ShinkaiBody {
-  message_data: MessageData;
-  internal_metadata: InternalMetadata;
-}
-
-export type MessageBody = { encrypted: EncryptedShinkaiBody } | { unencrypted: ShinkaiBody };
-
-export interface ShinkaiMessage {
+export class ShinkaiMessage {
   body: MessageBody;
   external_metadata: ExternalMetadata;
   encryption: keyof typeof TSEncryptionMethod;
-}
 
-export interface RegistrationCode {
-  code: string;
-  profileName: string;
-  identityPk: string;
-  encryptionPk: string;
-  permissionType: string;
+  constructor(body: MessageBody, external_metadata: ExternalMetadata, encryption: keyof typeof TSEncryptionMethod) {
+    this.body = body;
+    this.external_metadata = external_metadata;
+    this.encryption = encryption;
+  }
+
+  async encrypt_outer_layer(self_sk: Uint8Array, destination_pk: Uint8Array): Promise<ShinkaiMessage> {
+    if (this.body instanceof EncryptedMessageBody) {
+      throw new Error('Message body is already encrypted');
+    }
+
+    if (this.encryption === TSEncryptionMethod.None) {
+      throw new Error('Message encryption method is None');
+    }
+
+    const message_clone = new ShinkaiMessage(this.body, this.external_metadata, this.encryption);
+    message_clone.body = await this.body.encrypt(self_sk, destination_pk);
+    message_clone.encryption = TSEncryptionMethod.DiffieHellmanChaChaPoly1305;
+    return message_clone;
+  }
 }
