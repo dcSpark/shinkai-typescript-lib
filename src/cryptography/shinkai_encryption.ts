@@ -47,7 +47,7 @@ export const generateSignatureKeys = async (
   };
 };
 
-export async function encryptMessage(
+export async function encryptMessageBody(
   message: string,
   self_sk: Uint8Array,
   destination_pk: Uint8Array
@@ -55,7 +55,7 @@ export async function encryptMessage(
   await sodium.ready;
 
   const shared_secret = sharedKey(self_sk, destination_pk);
-  const key = sodium.crypto_generichash(32, shared_secret);
+  const key = blake3(shared_secret);
 
   const nonce = sodium.randombytes_buf(
     sodium.crypto_aead_chacha20poly1305_IETF_NPUBBYTES
@@ -73,7 +73,7 @@ export async function encryptMessage(
   return `encrypted:${encrypted_body}`;
 }
 
-export async function decryptMessage(
+export async function decryptMessageBody(
   encryptedBody: string,
   self_sk: Uint8Array,
   sender_pk: Uint8Array
@@ -88,35 +88,29 @@ export async function decryptMessage(
   const content = parts[1];
   const shared_secret = sharedKey(self_sk, sender_pk);
   const key = blake3(shared_secret);
-  console.log("key", key);
 
-  const content_len_bytes = sodium.from_hex(content.slice(0, 16));
-  console.log("content_len_bytes", content_len_bytes);
-  const schema_len_bytes = sodium.from_hex(content.slice(16, 32));
-  console.log("schema_len_bytes", schema_len_bytes);
-  let nonce = sodium.from_hex(content.slice(32, 32 + 24)); // Adjust nonce size to 12 bytes
-  console.log("nonce", nonce);
-  const ciphertext = sodium.from_hex(content.slice(32 + 24)); // Adjust slicing to match nonce size
-  console.log("ciphertext", Array.from(ciphertext).join(", "));
-  console.log("cipher length", ciphertext.length);
+  const decoded = sodium.from_hex(content);
+  const nonce = decoded.slice(0, 12);
+  const ciphertext = decoded.slice(12);
+
+  const plaintext_bytes = sodium.crypto_aead_chacha20poly1305_ietf_decrypt(
+    null,
+    ciphertext,
+    null,
+    nonce,
+    key
+  );
+
+  if (!plaintext_bytes) {
+    throw new Error("Decryption failure!");
+  }
+
+  const decrypted_body = sodium.to_string(plaintext_bytes);
 
   try {
-    const decipher = crypto.createDecipheriv("chacha20-poly1305", key, nonce, {
-      authTagLength: 16,
-    });
-    decipher.setAuthTag(ciphertext.slice(-16));
-    const plaintext_bytes = decipher.update(ciphertext.slice(0, -16));
-
-    console.log("plaintext_bytes: ", plaintext_bytes);
-    const decrypted_body = JSON.parse(sodium.to_string(plaintext_bytes));
-    return decrypted_body;
+    return JSON.parse(decrypted_body);
   } catch (e) {
-    if (e instanceof Error) {
-      console.error(e.message);
-      throw new Error("Decryption failure!: " + e.message);
-    } else {
-      throw new Error("Decryption failure!" + (e as any));
-    }
+    throw new Error("Decryption failure!: " + (e as any));
   }
 }
 

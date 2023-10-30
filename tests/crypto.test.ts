@@ -1,9 +1,9 @@
 // tests/crypto.test.ts
 import { hexToBytes } from "../src/cryptography/crypto_utils";
 import {
-  decryptMessage,
+  decryptMessageBody,
   decryptMessageWithPassphrase,
-  encryptMessage,
+  encryptMessageBody,
   encryptMessageWithPassphrase,
   generateEncryptionKeys,
   generateSignatureKeys,
@@ -21,7 +21,7 @@ globalThis.crypto = crypto;
 
 describe("Cryptography Functions", () => {
   test("encrypt and decrypt message using keys", async () => {
-    const originalMessage = "Hello, world!";
+    const originalMessage = '{"text":"Hello, world!"}';
     const senderKeys = await generateEncryptionKeys();
     const recipientKeys = await generateEncryptionKeys();
 
@@ -36,21 +36,24 @@ describe("Cryptography Functions", () => {
     );
 
     // Encrypt the message
-    const encryptedMessage = await encryptMessage(
+    const encryptedMessage = await encryptMessageBody(
       originalMessage,
       senderPrivateKey,
       recipientPublicKey
     );
 
     // Decrypt the message
-    const decryptedMessage = await decryptMessage(
+    const decryptedMessage = await decryptMessageBody(
       encryptedMessage,
       recipientPrivateKey,
       senderPublicKey
     );
 
+    // Convert the decrypted message back into a JSON string
+    const decryptedMessageString = JSON.stringify(decryptedMessage);
+
     // The decrypted message should be the same as the original message
-    expect(decryptedMessage).toBe(originalMessage);
+    expect(decryptedMessageString).toBe(originalMessage);
   });
 
   test("encrypt and decrypt message with passphrase", async () => {
@@ -76,21 +79,24 @@ describe("Cryptography Functions", () => {
   });
 
   test("decrypt provided encrypted message", async () => {
-    const encryptedMessage = "encrypted:597acb94d1af8144f4ac332937a41e217c6dd9e70dda9c584f976151b2f590cf6001ddeed6d43fe5741bf9481bd572c26b42fe8791c19431f3104cd407d9cfda2e499060ca85b4ec4b33efc2fa2f6bb1e07e38ae2798f76b5f085f6751c07175f805b84a3ada42f12e89b297d19452a5619a4445da84472a6747712aa477adf5792fbe3848e0c8fcbb7e892a843bf13582a0cb0aba6c0869cb493a197201120450c87bd7f06b34872cd53ab1adea3ca0c7c07657981dd96e921c9d563f867fe68ce776cbadec3d5853c19664354461184357d304557da1aa8a7ccf96fe2d21be90428438bf4ccaf95f8aabd90faf00007ba7acaab5cc867756517284d709d18bc0d47da2a8fd4875d3671729d1107be666ee66739f27d98f45f31f9b954ef39fb88e49a6f94b625a2f97e09c8a4023d24a29e17b024d28ce4ef8cc7a714ee23a6ff468ccaa99b107b289b6c54e0286825538c8f2d61cb0f8071aabcb576057aea3f0c3f1bc3a4427b33fb92f16290b7515014b5bfe80a6f33e894516bf0bcbfcd920ecb20c5271af385bb6943703fcd77033d95ad4bd925238062a32ceeb9ec0352f852d37054eb4836f82fbdf0bb338deb0275fcb686f84f761c1adc07ef6e2c2f09fffa1c39f1b548406";
-    const myEncryptionSecretKey = "e82bd03bf86b935fa34d71ad7ebb049f1f10f87d343e521511d8f9e66256204d";
-    const receiverPublicKey = "912fed05e286af45f44580d6a87da61e1f9a0946237dd29f7bc2d3cbeba0857f";
-  
+    const encryptedMessage =
+      "encrypted:cf6e0fdc56f0775188b451bbc4fa4188583c3195e16989bba7f664f83394dfe37a66104875013a5f99a4a17c2898cf12ead7f36a7eb289b70bb648f14175bde8b723e14a8fb79033076b2e9e5b987f097089c22572c80cd0cf4879a13d84b18fe894a58d55f117437ea812f5fbb5b46a467be8e668a5e6b95e6a6971643e72ff04cd88007f9b6e677debcb8474c406b8bf3ef7f6f9e1cdf6df2ee5b76bc678ffb8c7cc9de911694e3814edf5beb4bd9bd258976446bfc0038ae02bf117e5a9e6598d850782eac9024ac665b4191df513c6e9948befdaae3429e858bcfba8a0a01e64c37e2cc6ae3189e2ec632cb7f706678a2e4436b3b8c14edf1e23b512135f6768d04d4ea7df069d682b895a5abc7cf90d57dc6aaf11c920394b19d208838af3a11fc4a821752733f03b65c2552279498ab52feed614c6b5144640c680fd0570bcead01fe4c5f8c33f5f568d55050336149d5ddfc560431a6d2c80830626b84f9275ec96a75b89bc9494f5db12e7f1ea17db2a54affb0c90833901ba930e590cea56e1a7ace8270d9d3ece849cd827589626fc6bc6c260d6e74da909eb4bbc6c1da402e6c7bae780e316944adcf41c33d84b595a1df09496f4b32e5ee9af5992e187fc3fccc642a6a08d";
+    const myEncryptionSecretKey =
+      "e82bd03bf86b935fa34d71ad7ebb049f1f10f87d343e521511d8f9e66256204d";
+    const receiverPublicKey =
+      "912fed05e286af45f44580d6a87da61e1f9a0946237dd29f7bc2d3cbeba0857f";
+
     // Convert keys from HexString to Uint8Array
     const myPrivateKey = hexToBytes(myEncryptionSecretKey);
     const recipientPublicKey = hexToBytes(receiverPublicKey);
-  
+
     // Decrypt the message
-    const decryptedMessage = await decryptMessage(
+    const decryptedMessage = await decryptMessageBody(
       encryptedMessage,
       myPrivateKey,
       recipientPublicKey
     );
-  
+
     console.log(decryptedMessage);
   });
 
