@@ -75,6 +75,25 @@ describe("Cryptography Functions", () => {
     expect(decryptedMessage).toBe(originalMessage);
   });
 
+  test("decrypt provided encrypted message", async () => {
+    const encryptedMessage = "encrypted:597acb94d1af8144f4ac332937a41e217c6dd9e70dda9c584f976151b2f590cf6001ddeed6d43fe5741bf9481bd572c26b42fe8791c19431f3104cd407d9cfda2e499060ca85b4ec4b33efc2fa2f6bb1e07e38ae2798f76b5f085f6751c07175f805b84a3ada42f12e89b297d19452a5619a4445da84472a6747712aa477adf5792fbe3848e0c8fcbb7e892a843bf13582a0cb0aba6c0869cb493a197201120450c87bd7f06b34872cd53ab1adea3ca0c7c07657981dd96e921c9d563f867fe68ce776cbadec3d5853c19664354461184357d304557da1aa8a7ccf96fe2d21be90428438bf4ccaf95f8aabd90faf00007ba7acaab5cc867756517284d709d18bc0d47da2a8fd4875d3671729d1107be666ee66739f27d98f45f31f9b954ef39fb88e49a6f94b625a2f97e09c8a4023d24a29e17b024d28ce4ef8cc7a714ee23a6ff468ccaa99b107b289b6c54e0286825538c8f2d61cb0f8071aabcb576057aea3f0c3f1bc3a4427b33fb92f16290b7515014b5bfe80a6f33e894516bf0bcbfcd920ecb20c5271af385bb6943703fcd77033d95ad4bd925238062a32ceeb9ec0352f852d37054eb4836f82fbdf0bb338deb0275fcb686f84f761c1adc07ef6e2c2f09fffa1c39f1b548406";
+    const myEncryptionSecretKey = "e82bd03bf86b935fa34d71ad7ebb049f1f10f87d343e521511d8f9e66256204d";
+    const receiverPublicKey = "912fed05e286af45f44580d6a87da61e1f9a0946237dd29f7bc2d3cbeba0857f";
+  
+    // Convert keys from HexString to Uint8Array
+    const myPrivateKey = hexToBytes(myEncryptionSecretKey);
+    const recipientPublicKey = hexToBytes(receiverPublicKey);
+  
+    // Decrypt the message
+    const decryptedMessage = await decryptMessage(
+      encryptedMessage,
+      myPrivateKey,
+      recipientPublicKey
+    );
+  
+    console.log(decryptedMessage);
+  });
+
   test("sign and verify outer layer signature", async () => {
     const unsorted_messageJson = `{
         "body": {

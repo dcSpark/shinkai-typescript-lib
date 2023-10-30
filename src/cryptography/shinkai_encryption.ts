@@ -4,6 +4,9 @@ import { generateKeyPair, sharedKey } from "curve25519-js";
 import { toHexString } from "./crypto_utils";
 import { createHash, randomBytes } from "crypto";
 import sodium from "libsodium-wrappers-sumo";
+import { blake3 } from "@noble/hashes/blake3";
+import nacl from "tweetnacl";
+import crypto from "crypto";
 
 export type HexString = string;
 // Previous
@@ -84,27 +87,35 @@ export async function decryptMessage(
 
   const content = parts[1];
   const shared_secret = sharedKey(self_sk, sender_pk);
-  const key = sodium.crypto_generichash(32, shared_secret);
+  const key = blake3(shared_secret);
+  console.log("key", key);
 
-  const nonce = sodium.from_hex(content.slice(0, 24));
-  const ciphertext = sodium.from_hex(content.slice(24));
+  const content_len_bytes = sodium.from_hex(content.slice(0, 16));
+  console.log("content_len_bytes", content_len_bytes);
+  const schema_len_bytes = sodium.from_hex(content.slice(16, 32));
+  console.log("schema_len_bytes", schema_len_bytes);
+  let nonce = sodium.from_hex(content.slice(32, 32 + 24)); // Adjust nonce size to 12 bytes
+  console.log("nonce", nonce);
+  const ciphertext = sodium.from_hex(content.slice(32 + 24)); // Adjust slicing to match nonce size
+  console.log("ciphertext", Array.from(ciphertext).join(", "));
+  console.log("cipher length", ciphertext.length);
 
   try {
-    const plaintext_bytes = sodium.crypto_aead_chacha20poly1305_ietf_decrypt(
-      null,
-      ciphertext,
-      null,
-      nonce,
-      key
-    );
-    const decrypted_body = sodium.to_string(plaintext_bytes);
+    const decipher = crypto.createDecipheriv("chacha20-poly1305", key, nonce, {
+      authTagLength: 16,
+    });
+    decipher.setAuthTag(ciphertext.slice(-16));
+    const plaintext_bytes = decipher.update(ciphertext.slice(0, -16));
+
+    console.log("plaintext_bytes: ", plaintext_bytes);
+    const decrypted_body = JSON.parse(sodium.to_string(plaintext_bytes));
     return decrypted_body;
   } catch (e) {
     if (e instanceof Error) {
       console.error(e.message);
       throw new Error("Decryption failure!: " + e.message);
     } else {
-      throw new Error("Decryption failure!");
+      throw new Error("Decryption failure!" + (e as any));
     }
   }
 }
@@ -137,7 +148,8 @@ export async function encryptMessageWithPassphrase(
     key
   );
 
-  const encrypted_body = sodium.to_hex(salt) + sodium.to_hex(nonce) + sodium.to_hex(ciphertext);
+  const encrypted_body =
+    sodium.to_hex(salt) + sodium.to_hex(nonce) + sodium.to_hex(ciphertext);
   return `encrypted:${encrypted_body}`;
 }
 
