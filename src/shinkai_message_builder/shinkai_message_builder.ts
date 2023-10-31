@@ -550,4 +550,84 @@ export class ShinkaiMessageBuilder {
       .external_metadata_with_intra_sender(receiver, sender, "")
       .build();
   }
+
+  public static async createCustomShinkaiMessageToNode<T>(
+    my_subidentity_encryption_sk: EncryptionStaticKey,
+    my_subidentity_signature_sk: SignatureStaticKey,
+    receiver_public_key: EncryptionPublicKey,
+    data: T,
+    sender_subidentity: string,
+    sender: ProfileName,
+    receiver: ProfileName,
+    schema: MessageSchemaType
+  ): Promise<ShinkaiMessage> {
+    const body = JSON.stringify(data);
+  
+    // Convert encryption public key to string
+    const my_subidentity_encryption_pk = nacl.box.keyPair.fromSecretKey(
+      my_subidentity_encryption_sk
+    ).publicKey;
+    const other = Array.from(my_subidentity_encryption_pk)
+      .map((byte) => byte.toString(16).padStart(2, "0"))
+      .join("");
+  
+    return new ShinkaiMessageBuilder(
+      my_subidentity_encryption_sk,
+      my_subidentity_signature_sk,
+      receiver_public_key
+    )
+      .set_message_raw_content(body)
+      .set_body_encryption(TSEncryptionMethod.DiffieHellmanChaChaPoly1305)
+      .set_internal_metadata_with_schema(
+        sender_subidentity,
+        "",
+        "",
+        schema,
+        TSEncryptionMethod.None
+      )
+      .set_external_metadata_with_other(receiver, sender, other)
+      .build();
+  }
+
+  public static async useCodeRegistrationForProfile(
+    profile_encryption_sk: EncryptionStaticKey,
+    profile_signature_sk: SignatureStaticKey,
+    receiver_public_key: EncryptionPublicKey,
+    code: string,
+    identity_type: string,
+    permission_type: string,
+    registration_name: string,
+    sender_subidentity: string,
+    sender: ProfileName,
+    receiver: ProfileName
+  ): Promise<ShinkaiMessage> {
+    const profile_signature_pk = await ed.getPublicKey(profile_signature_sk);
+    const profile_encryption_pk = nacl.box.keyPair.fromSecretKey(profile_encryption_sk).publicKey;
+  
+    const registration_code = {
+      code,
+      registration_name,
+      device_identity_pk: "",
+      device_encryption_pk: "",
+      profile_identity_pk: Array.from(profile_signature_pk)
+        .map((byte) => byte.toString(16).padStart(2, "0"))
+        .join(""),
+      profile_encryption_pk: Array.from(profile_encryption_pk)
+        .map((byte) => byte.toString(16).padStart(2, "0"))
+        .join(""),
+      identity_type,
+      permission_type,
+    };
+  
+    return ShinkaiMessageBuilder.createCustomShinkaiMessageToNode(
+      profile_encryption_sk,
+      profile_signature_sk,
+      receiver_public_key,
+      registration_code,
+      sender_subidentity,
+      sender,
+      receiver,
+      MessageSchemaType.UseRegistrationCode
+    );
+  }
 }
