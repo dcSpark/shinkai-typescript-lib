@@ -120,8 +120,8 @@ export class InboxName {
     const recipientName = new ShinkaiName(recipientFull);
 
     const inboxNameParts = [
-      senderName.toString(),
-      recipientName.toString(),
+      senderName.getValue(),
+      recipientName.getValue(),
     ].sort();
     const inboxName = `inbox::${inboxNameParts[0]}::${inboxNameParts[1]}::${isE2E}`;
 
@@ -133,7 +133,7 @@ export class InboxName {
     return InboxName.parseInboxName(inboxName);
   }
 
-  toString(): string {
+  getValue(): string {
     return this.value;
   }
 }

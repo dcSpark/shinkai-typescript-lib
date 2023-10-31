@@ -1,5 +1,6 @@
 import { ShinkaiBody } from "./shinkai_body";
 import { EncryptedShinkaiBody } from "./encrypted_shinkai_body";
+import { encryptMessageBody } from "../cryptography/shinkai_encryption";
 
 
 export abstract class MessageBody {
@@ -28,6 +29,14 @@ export class UnencryptedMessageBody extends MessageBody {
   }
 
   async encrypt(self_sk: Uint8Array, destination_pk: Uint8Array): Promise<MessageBody> {
-    return "" as any;
+    let encryptedBody = await encryptMessageBody(
+      JSON.stringify(this),
+      self_sk,
+      destination_pk,
+    );
+    
+    return new EncryptedMessageBody(
+      { content: encryptedBody }
+    );
   }
 }

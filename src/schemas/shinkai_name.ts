@@ -40,7 +40,7 @@ export class ShinkaiName {
       return true;
     } catch (err) {
       if (err instanceof Error) {
-        if (process.env.NODE_ENV !== 'test') {
+        if (process.env.NODE_ENV !== "test") {
           console.error(`Validation error: ${shinkaiName}`);
           console.info(err.message);
         }
@@ -62,7 +62,7 @@ export class ShinkaiName {
     }
 
     if (!parts[0].startsWith("@@") || !parts[0].endsWith(".shinkai")) {
-      if (process.env.NODE_ENV !== 'test') {
+      if (process.env.NODE_ENV !== "test") {
         console.error(
           `Node part of the name should start with '@@' and end with '.shinkai'.`
         );
@@ -74,7 +74,7 @@ export class ShinkaiName {
 
     const nodeRegex = /^@@[a-zA-Z0-9_\.]+\.shinkai$/;
     if (!nodeRegex.test(parts[0])) {
-      if (process.env.NODE_ENV !== 'test') {
+      if (process.env.NODE_ENV !== "test") {
         console.error(
           `Node part of the name contains invalid characters: ${rawName}`
         );
@@ -89,7 +89,7 @@ export class ShinkaiName {
 
       if (index === 0) {
         if (part.includes("/")) {
-          if (process.env.NODE_ENV !== 'test') {
+          if (process.env.NODE_ENV !== "test") {
             console.error(`Root node name cannot contain '/': ${rawName}`);
           }
           throw new Error("Root node name cannot contain '/'.");
@@ -104,7 +104,7 @@ export class ShinkaiName {
           part === ShinkaiSubidentityType.Device
         )
       ) {
-        if (process.env.NODE_ENV !== 'test') {
+        if (process.env.NODE_ENV !== "test") {
           console.error(
             `The third part should either be 'agent' or 'device': ${rawName}`
           );
@@ -113,7 +113,7 @@ export class ShinkaiName {
       }
 
       if (index === 3 && !partRegex.test(part)) {
-        if (process.env.NODE_ENV !== 'test') {
+        if (process.env.NODE_ENV !== "test") {
           console.error(
             `The fourth part (name after 'agent' or 'device') should be alphanumeric or underscore: ${rawName}`
           );
@@ -128,7 +128,7 @@ export class ShinkaiName {
         index !== 2 &&
         (!partRegex.test(part) || part.includes(".shinkai"))
       ) {
-        if (process.env.NODE_ENV !== 'test') {
+        if (process.env.NODE_ENV !== "test") {
           console.error(
             `Name parts should be alphanumeric or underscore and not contain '.shinkai': ${rawName}`
           );
@@ -144,7 +144,7 @@ export class ShinkaiName {
       (parts[2] === ShinkaiSubidentityType.Agent ||
         parts[2] === ShinkaiSubidentityType.Device)
     ) {
-      if (process.env.NODE_ENV !== 'test') {
+      if (process.env.NODE_ENV !== "test") {
         console.error(
           `If type is 'agent' or 'device', a fourth part is expected: ${rawName}`
         );
@@ -318,7 +318,22 @@ export class ShinkaiName {
     return this.hasDevice() ? this.subidentityName : null;
   }
 
-  //
+  getAgentName(): string | null {
+    return this.hasAgent() ? this.subidentityName : null;
+  }
+
+  extractProfile(): ShinkaiName | Error {
+    if (this.hasNoSubidentities()) {
+      throw new Error("This ShinkaiName does not include a profile.");
+    }
+
+    return new ShinkaiName(`${this.nodeName}/${this.profileName}`);
+  }
+
+  extractNode(): ShinkaiName {
+    return new ShinkaiName(this.nodeName);
+  }
+
   static correctNodeName(rawName: string): string {
     let parts = rawName.split("/", 2);
     let nodeName = parts[0];
@@ -335,6 +350,8 @@ export class ShinkaiName {
 
     return correctedName;
   }
-}
 
-// ... other classes and functions, similar to the Rust version, but using JavaScript/TypeScript syntax
+  getValue(): string {
+    return this.fullName;
+  }
+}
