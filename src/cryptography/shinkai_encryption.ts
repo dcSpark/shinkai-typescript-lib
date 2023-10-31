@@ -124,9 +124,7 @@ export async function encryptMessageData(
   await sodium.ready;
 
   const shared_secret = sharedKey(self_sk, destination_pk);
-  console.log("shared_secret", shared_secret);
   const key = blake3(shared_secret);
-  console.log("key", key);
 
   const combined_content = data.message_raw_content + data.message_content_schema;
   const combined_content_bytes = new TextEncoder().encode(combined_content);
@@ -179,16 +177,12 @@ export async function decryptMessageData(
 
   const content = parts[1];
   const shared_secret = sharedKey(self_sk, sender_pk);
-  console.log("shared_secret", shared_secret);
   const key = blake3(shared_secret);
-  console.log("key", key);
 
   const decoded = sodium.from_hex(content);
   const content_len_bytes = decoded.slice(0, 8);
-  console.log("content_len_bytes", content_len_bytes);
   const remainder = decoded.slice(16);
   const nonce = remainder.slice(0, 12);
-  console.log("nonce", nonce);
   const ciphertext = remainder.slice(12);
 
   const content_len = new DataView(content_len_bytes.buffer).getUint32(0, true);

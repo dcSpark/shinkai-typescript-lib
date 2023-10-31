@@ -1,6 +1,7 @@
 import * as ed from "noble-ed25519";
 import { blake3 } from "@noble/hashes/blake3";
 import { ShinkaiMessage } from "../shinkai_message/shinkai_message";
+import { UnencryptedMessageBody } from "../shinkai_message/shinkai_message_body";
 
 // TODO(Nico): move somewhere
 export class ShinkaiMessageError extends Error {
@@ -78,6 +79,89 @@ export async function sign_outer_layer(
       .join("");
 
     return shinkaiMessage.external_metadata;
+  } catch (e) {
+    if (e instanceof Error) {
+      throw new ShinkaiMessageError(`Signing error: ${e.message}`);
+    } else {
+      throw new ShinkaiMessageError(`Signing error: ${e}`);
+    }
+  }
+}
+
+export async function sign_inner_layer(
+  secretKey: Uint8Array,
+  shinkaiMessage: ShinkaiMessage
+): Promise<void> {
+  try {
+    if (!(shinkaiMessage.body instanceof UnencryptedMessageBody)) {
+      throw new ShinkaiMessageError('Message body is not unencrypted');
+    }
+
+    // Ensure that body.unencrypted.internal_metadata.signature is empty
+    let messageCopy = JSON.parse(JSON.stringify(shinkaiMessage));
+    messageCopy.body.unencrypted.internal_metadata.signature = "";
+
+    const sortedShinkaiMessage = sortObjectKeys(messageCopy);
+    const messageHash = blake3FromObj(sortedShinkaiMessage);
+    const messageHashMatched = messageHash.match(/.{1,2}/g);
+    if (!messageHashMatched) {
+      throw new ShinkaiMessageError(`Invalid message hash format`);
+    }
+    const messageHashBytes = new Uint8Array(
+      messageHashMatched.map((byte) => parseInt(byte, 16))
+    );
+
+    const signature = await ed.sign(messageHashBytes, secretKey);
+    shinkaiMessage.body.unencrypted.internal_metadata.signature = Array.from(signature)
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
+  } catch (e) {
+    if (e instanceof Error) {
+      throw new ShinkaiMessageError(`Signing error: ${e.message}`);
+    } else {
+      throw new ShinkaiMessageError(`Signing error: ${e}`);
+    }
+  }
+}
+
+export async function verify_inner_layer_signature(
+  publicKey: Uint8Array,
+  shinkaiMessage: ShinkaiMessage
+): Promise<boolean> {
+  try {
+    if (!(shinkaiMessage.body instanceof UnencryptedMessageBody)) {
+      throw new ShinkaiMessageError('Message body is not unencrypted');
+    }
+
+    const hexSignature = shinkaiMessage.body.unencrypted.internal_metadata.signature;
+    console.log("Signature from message:", hexSignature);
+    if (!hexSignature) {
+      throw new ShinkaiMessageError(`Signature is missing`);
+    }
+    const matched = hexSignature.match(/.{1,2}/g);
+    if (!matched) {
+      throw new ShinkaiMessageError(`Invalid signature format`);
+    }
+    const signatureBytes = new Uint8Array(
+      matched.map((byte) => parseInt(byte, 16))
+    );
+
+    // Create a copy of the message with an empty signature
+    let messageCopy = JSON.parse(JSON.stringify(shinkaiMessage));
+    messageCopy.body.unencrypted.internal_metadata.signature = "";
+
+    const sortedShinkaiMessage = sortObjectKeys(messageCopy);
+    // Calculate the hash of the modified message
+    const messageHash = blake3FromObj(sortedShinkaiMessage);
+    const messageHashMatched = messageHash.match(/.{1,2}/g);
+    if (!messageHashMatched) {
+      throw new ShinkaiMessageError(`Invalid message hash format`);
+    }
+    const messageHashBytes = new Uint8Array(
+      messageHashMatched.map((byte) => parseInt(byte, 16))
+    );
+
+    return await ed.verify(signatureBytes, messageHashBytes, publicKey);
   } catch (e) {
     if (e instanceof Error) {
       throw new ShinkaiMessageError(`Signing error: ${e.message}`);
