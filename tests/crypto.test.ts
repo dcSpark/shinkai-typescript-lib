@@ -2,8 +2,10 @@
 import { hexToBytes } from "../src/cryptography/crypto_utils";
 import {
   decryptMessageBody,
+  decryptMessageData,
   decryptMessageWithPassphrase,
   encryptMessageBody,
+  encryptMessageData,
   encryptMessageWithPassphrase,
   generateEncryptionKeys,
   generateSignatureKeys,
@@ -15,12 +17,13 @@ import {
   sign_outer_layer,
   verify_outer_layer_signature,
 } from "../src/cryptography/shinkai_signing";
+import { MessageSchemaType } from "../src/schemas/schema_types";
 
 const crypto = new Crypto();
 globalThis.crypto = crypto;
 
 describe("Cryptography Functions", () => {
-  test("encrypt and decrypt message using keys", async () => {
+  test("encrypt and decrypt message body using keys", async () => {
     const originalMessage = '{"text":"Hello, world!"}';
     const senderKeys = await generateEncryptionKeys();
     const recipientKeys = await generateEncryptionKeys();
@@ -78,7 +81,7 @@ describe("Cryptography Functions", () => {
     expect(decryptedMessage).toBe(originalMessage);
   });
 
-  test("decrypt provided encrypted message", async () => {
+  test("decrypt provided encrypted body message", async () => {
     const encryptedMessage =
       "encrypted:cf6e0fdc56f0775188b451bbc4fa4188583c3195e16989bba7f664f83394dfe37a66104875013a5f99a4a17c2898cf12ead7f36a7eb289b70bb648f14175bde8b723e14a8fb79033076b2e9e5b987f097089c22572c80cd0cf4879a13d84b18fe894a58d55f117437ea812f5fbb5b46a467be8e668a5e6b95e6a6971643e72ff04cd88007f9b6e677debcb8474c406b8bf3ef7f6f9e1cdf6df2ee5b76bc678ffb8c7cc9de911694e3814edf5beb4bd9bd258976446bfc0038ae02bf117e5a9e6598d850782eac9024ac665b4191df513c6e9948befdaae3429e858bcfba8a0a01e64c37e2cc6ae3189e2ec632cb7f706678a2e4436b3b8c14edf1e23b512135f6768d04d4ea7df069d682b895a5abc7cf90d57dc6aaf11c920394b19d208838af3a11fc4a821752733f03b65c2552279498ab52feed614c6b5144640c680fd0570bcead01fe4c5f8c33f5f568d55050336149d5ddfc560431a6d2c80830626b84f9275ec96a75b89bc9494f5db12e7f1ea17db2a54affb0c90833901ba930e590cea56e1a7ace8270d9d3ece849cd827589626fc6bc6c260d6e74da909eb4bbc6c1da402e6c7bae780e316944adcf41c33d84b595a1df09496f4b32e5ee9af5992e187fc3fccc642a6a08d";
     const myEncryptionSecretKey =
@@ -97,7 +100,50 @@ describe("Cryptography Functions", () => {
       recipientPublicKey
     );
 
-    console.log(decryptedMessage);
+    // Check if the decryptedMessage is equal to the expected object
+    expect(decryptedMessage).toEqual({
+      message_data: {
+        unencrypted: {
+          message_raw_content: "Test data",
+          message_content_schema: "TextContent",
+        },
+      },
+      internal_metadata: {
+        sender_subidentity: "",
+        recipient_subidentity: "",
+        inbox:
+          "inbox::@@receiver_node.shinkai::@@receiver_node.shinkai/sender_profile::false",
+        signature:
+          "529fb1301b03d7813c32106c6739bb0366c3fd1a3b2a41f96f2f7a598a1d5deb9a8446b42168816a6409fbc49b474438d31a91d516e2151721d1ef0ab8363506",
+        encryption: "None",
+      },
+    });
+  });
+
+  test("decrypt provided encrypted data message", async () => {
+    const encryptedMessage =
+      "encrypted:11000000000000000b00000000000000105b49f6cc037679b9863a3cae6dde277e1300d29cc9cc92e3a7a1639b741facb6bb7f4b6fdb04fbbeb46d32555159f1f5dcf6268d07e9cf";
+    const myEncryptionSecretKey =
+      "08ad9a2f5f9418b386cce489a0bac8cb5bba34171864909e4dfec1ea4e26bf77";
+    const receiverPublicKey =
+      "96722725a1361f6108aa6cc967032e8dc9667b17058ca630c8861deff69b3f2f";
+
+    // Convert keys from HexString to Uint8Array
+    const myPrivateKey = hexToBytes(myEncryptionSecretKey);
+    const recipientPublicKey = hexToBytes(receiverPublicKey);
+
+    // Decrypt the message
+    const decryptedMessage = await decryptMessageData(
+      encryptedMessage,
+      myPrivateKey,
+      recipientPublicKey
+    );
+
+    // Check if the decryptedMessage is equal to the expected object
+    expect(decryptedMessage).toEqual({
+      message_raw_content: "test body content",
+      message_content_schema: "TextContent",
+    });
   });
 
   test("sign and verify outer layer signature", async () => {
@@ -156,4 +202,36 @@ describe("Cryptography Functions", () => {
     // The signature should be valid
     expect(isValid).toBe(true);
   });
+});
+
+test("encrypt and decrypt message data using keys", async () => {
+  const originalData = {
+    message_raw_content: "Hello, world!",
+    message_content_schema: "TextContent" as MessageSchemaType,
+  };
+  const senderKeys = await generateEncryptionKeys();
+  const recipientKeys = await generateEncryptionKeys();
+
+  // Convert keys from HexString to Uint8Array
+  const senderPrivateKey = hexToBytes(senderKeys.my_encryption_sk_string);
+  const senderPublicKey = hexToBytes(senderKeys.my_encryption_pk_string);
+  const recipientPrivateKey = hexToBytes(recipientKeys.my_encryption_sk_string);
+  const recipientPublicKey = hexToBytes(recipientKeys.my_encryption_pk_string);
+
+  // Encrypt the message data
+  const encryptedData = await encryptMessageData(
+    originalData,
+    senderPrivateKey,
+    recipientPublicKey
+  );
+
+  // Decrypt the message data
+  const decryptedData = await decryptMessageData(
+    encryptedData,
+    recipientPrivateKey,
+    senderPublicKey
+  );
+
+  // The decrypted data should be the same as the original data
+  expect(decryptedData).toEqual(originalData);
 });

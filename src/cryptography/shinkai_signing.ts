@@ -3,7 +3,7 @@ import { blake3 } from "@noble/hashes/blake3";
 import { ShinkaiMessage } from "../shinkai_message/shinkai_message";
 
 // TODO(Nico): move somewhere
-class ShinkaiMessageError extends Error {
+export class ShinkaiMessageError extends Error {
   constructor(message?: string) {
     super(message);
     this.name = "ShinkaiMessageError";
