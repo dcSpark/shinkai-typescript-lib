@@ -1,5 +1,5 @@
 // tests/crypto.test.ts
-import { hexToBytes } from "../src/cryptography/crypto_utils";
+import { hexToBytes, toHexString } from "../src/cryptography/crypto_utils";
 import {
   decryptMessageBody,
   decryptMessageData,
@@ -21,6 +21,7 @@ import {
 } from "../src/cryptography/shinkai_signing";
 import { MessageSchemaType } from "../src/schemas/schema_types";
 import { UnencryptedMessageBody } from "../src/shinkai_message/shinkai_message_body";
+import nacl from "tweetnacl";
 
 const crypto = new Crypto();
 globalThis.crypto = crypto;
@@ -207,42 +208,45 @@ describe("Cryptography Functions", () => {
     // The signature should be valid
     expect(isValid).toBe(true);
   });
-});
 
-test("encrypt and decrypt message data using keys", async () => {
-  const originalData = {
-    message_raw_content: "Hello, world!",
-    message_content_schema: "TextContent" as MessageSchemaType,
-  };
-  const senderKeys = await generateEncryptionKeys();
-  const recipientKeys = await generateEncryptionKeys();
+  test("encrypt and decrypt message data using keys", async () => {
+    const originalData = {
+      message_raw_content: "Hello, world!",
+      message_content_schema: "TextContent" as MessageSchemaType,
+    };
+    const senderKeys = await generateEncryptionKeys();
+    const recipientKeys = await generateEncryptionKeys();
 
-  // Convert keys from HexString to Uint8Array
-  const senderPrivateKey = hexToBytes(senderKeys.my_encryption_sk_string);
-  const senderPublicKey = hexToBytes(senderKeys.my_encryption_pk_string);
-  const recipientPrivateKey = hexToBytes(recipientKeys.my_encryption_sk_string);
-  const recipientPublicKey = hexToBytes(recipientKeys.my_encryption_pk_string);
+    // Convert keys from HexString to Uint8Array
+    const senderPrivateKey = hexToBytes(senderKeys.my_encryption_sk_string);
+    const senderPublicKey = hexToBytes(senderKeys.my_encryption_pk_string);
+    const recipientPrivateKey = hexToBytes(
+      recipientKeys.my_encryption_sk_string
+    );
+    const recipientPublicKey = hexToBytes(
+      recipientKeys.my_encryption_pk_string
+    );
 
-  // Encrypt the message data
-  const encryptedData = await encryptMessageData(
-    originalData,
-    senderPrivateKey,
-    recipientPublicKey
-  );
+    // Encrypt the message data
+    const encryptedData = await encryptMessageData(
+      originalData,
+      senderPrivateKey,
+      recipientPublicKey
+    );
 
-  // Decrypt the message data
-  const decryptedData = await decryptMessageData(
-    encryptedData,
-    recipientPrivateKey,
-    senderPublicKey
-  );
+    // Decrypt the message data
+    const decryptedData = await decryptMessageData(
+      encryptedData,
+      recipientPrivateKey,
+      senderPublicKey
+    );
 
-  // The decrypted data should be the same as the original data
-  expect(decryptedData).toEqual(originalData);
-});
+    // The decrypted data should be the same as the original data
+    expect(decryptedData).toEqual(originalData);
+  });
 
-test("sign and verify inner layer signature", async () => {
-  const unsorted_messageJson = `{
+  test("sign and verify inner layer signature", async () => {
+    const unsorted_messageJson = `{
     "body": {
       "unencrypted": {
         "message_data": {
@@ -272,29 +276,49 @@ test("sign and verify inner layer signature", async () => {
     "version": "V1_0"
   }`;
 
-  const keys = await generateSignatureKeys();
+    const keys = await generateSignatureKeys();
 
-  // Convert keys from HexString to Uint8Array
-  const privateKey = hexToBytes(keys.my_identity_sk_string);
-  const publicKey = hexToBytes(keys.my_identity_pk_string);
+    // Convert keys from HexString to Uint8Array
+    const privateKey = hexToBytes(keys.my_identity_sk_string);
+    const publicKey = hexToBytes(keys.my_identity_pk_string);
 
-  // Parse the JSON string to a plain object
-  const messageData: any = JSON.parse(unsorted_messageJson);
+    // Parse the JSON string to a plain object
+    const messageData: any = JSON.parse(unsorted_messageJson);
 
-  // Create a new ShinkaiMessage instance
-  const shinkaiMessage = new ShinkaiMessage(
-    new UnencryptedMessageBody(messageData.body.unencrypted),
-    messageData.external_metadata,
-    messageData.encryption,
-    messageData.version
-  );
+    // Create a new ShinkaiMessage instance
+    const shinkaiMessage = new ShinkaiMessage(
+      new UnencryptedMessageBody(messageData.body.unencrypted),
+      messageData.external_metadata,
+      messageData.encryption,
+      messageData.version
+    );
 
-  // Sign the message
-  await sign_inner_layer(privateKey, shinkaiMessage);
+    // Sign the message
+    await sign_inner_layer(privateKey, shinkaiMessage);
 
-  // Verify the signature
-  const isValid = await verify_inner_layer_signature(publicKey, shinkaiMessage);
+    // Verify the signature
+    const isValid = await verify_inner_layer_signature(
+      publicKey,
+      shinkaiMessage
+    );
 
-  // The signature should be valid
-  expect(isValid).toBe(true);
+    // The signature should be valid
+    expect(isValid).toBe(true);
+  });
+
+  test("check compatibility between crypto encryption libraries for key management", async () => {
+    const keys = await generateEncryptionKeys();
+  
+    // Convert keys from HexString to Uint8Array
+    const privateKey = hexToBytes(keys.my_encryption_sk_string);
+    const originalPublicKey = hexToBytes(keys.my_encryption_pk_string);
+  
+    // Compute the public key from the private key using tweetnacl
+    const computedPublicKey = nacl.box.keyPair.fromSecretKey(privateKey).publicKey;
+  
+    // The computed public key should be the same as the original public key
+    expect(toHexString(computedPublicKey)).toBe(toHexString(originalPublicKey));
+  });
+
+  // end of describe
 });

@@ -25,7 +25,6 @@
     "curve25519-js": "^0.0.4",
     "libsodium-wrappers-sumo": "^0.7.13",
     "noble-ed25519": "^1.2.6",
-    "tweetnacl": "^1.0.3",
-    "tweetnacl-util": "^0.15.1"
+    "tweetnacl": "^1.0.3"
   }
 }

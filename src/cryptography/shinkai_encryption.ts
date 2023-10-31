@@ -5,7 +5,6 @@ import { toHexString } from "./crypto_utils";
 import { createHash, randomBytes } from "crypto";
 import sodium from "libsodium-wrappers-sumo";
 import { blake3 } from "@noble/hashes/blake3";
-import nacl from "tweetnacl";
 import crypto from "crypto";
 import { ShinkaiData } from "../shinkai_message/shinkai_data";
 import { ShinkaiMessageError } from "./shinkai_signing";

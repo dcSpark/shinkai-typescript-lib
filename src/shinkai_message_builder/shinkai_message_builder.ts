@@ -1,3 +1,6 @@
+import nacl from "tweetnacl";
+import { encryptMessageBody, encryptMessageData } from "../cryptography/shinkai_encryption";
+import { sign_inner_layer, sign_outer_layer } from "../cryptography/shinkai_signing";
 import { InboxName } from "../schemas/inbox_name";
 import { MessageSchemaType, TSEncryptionMethod } from "../schemas/schema_types";
 import { ShinkaiBody } from "../shinkai_message/shinkai_body";
@@ -5,19 +8,18 @@ import { ShinkaiData } from "../shinkai_message/shinkai_data";
 import { ExternalMetadata } from "../shinkai_message/shinkai_external_metadata";
 import { InternalMetadata } from "../shinkai_message/shinkai_internal_metadata";
 import { ShinkaiMessage } from "../shinkai_message/shinkai_message";
-import { MessageBody } from "../shinkai_message/shinkai_message_body";
+import { EncryptedMessageBody, MessageBody, UnencryptedMessageBody } from "../shinkai_message/shinkai_message_body";
 import { MessageData } from "../shinkai_message/shinkai_message_data";
 import { ShinkaiVersion } from "../shinkai_message/shinkai_version";
+import * as ed from "noble-ed25519";
 
-import * as nacl from 'tweetnacl';
+export type ProfileName = string;
+export type EncryptionStaticKey = Uint8Array;
+export type EncryptionPublicKey = Uint8Array;
+export type SignatureStaticKey = Uint8Array;
+export type SignaturePublicKey = Uint8Array;
 
-type ProfileName = string;
-type EncryptionStaticKey = Uint8Array;
-type EncryptionPublicKey = Uint8Array;
-type SignatureStaticKey = Uint8Array;
-type SignaturePublicKey = Uint8Array;
-
-class ShinkaiMessageBuilder {
+export class ShinkaiMessageBuilder {
   message_raw_content: string;
   message_content_schema: MessageSchemaType;
   internal_metadata?: InternalMetadata;
@@ -37,14 +39,19 @@ class ShinkaiMessageBuilder {
     receiver_public_key: Uint8Array
   ) {
     this.version = ShinkaiVersion.V1_0;
-    this.my_encryption_public_key = nacl.box.keyPair.fromSecretKey(my_encryption_secret_key).publicKey;
-    this.my_signature_public_key = nacl.sign.keyPair.fromSecretKey(my_signature_secret_key).publicKey;
     this.my_encryption_secret_key = my_encryption_secret_key;
     this.my_signature_secret_key = my_signature_secret_key;
     this.receiver_public_key = receiver_public_key;
     this.message_raw_content = "";
     this.message_content_schema = MessageSchemaType.Empty;
     this.encryption = TSEncryptionMethod.None;
+    this.my_encryption_public_key = nacl.box.keyPair.fromSecretKey(this.my_encryption_secret_key).publicKey;
+    this.my_signature_public_key = new Uint8Array();
+  }
+
+  async init(): Promise<this> {
+    this.my_signature_public_key = await ed.getPublicKey(this.my_signature_secret_key);
+    return this;
   }
 
   set_body_encryption(encryption: TSEncryptionMethod): this {
@@ -163,26 +170,29 @@ class ShinkaiMessageBuilder {
     return clone;
   }
 
-  async build(): Promise<ShinkaiMessage | string> {
+  async build(): Promise<ShinkaiMessage> {
     let newSelf = this.clone();
   
     // Validations
     if (!newSelf.internal_metadata) {
-      return "Internal metadata is required";
+      throw new Error("Internal metadata is required");
+    }
+
+    if (!newSelf.external_metadata) {
+      throw new Error("External metadata is required");
     }
   
     if (newSelf.encryption !== TSEncryptionMethod.None
       && newSelf.internal_metadata
       && newSelf.internal_metadata.encryption !== TSEncryptionMethod.None
       && !newSelf.optional_second_public_key_receiver_node) {
-      return "Encryption should not be set on both body and internal metadata simultaneously without optional_second_public_key_receiver_node.";
+        throw new Error("Encryption should not be set on both body and internal metadata simultaneously without optional_second_public_key_receiver_node.");
     }
   
     // Fix inbox name if it's empty
     if (newSelf.internal_metadata && newSelf.internal_metadata.inbox === "") {
       if (newSelf.external_metadata) {
         // Generate a new inbox name
-        // Print the value of external_metadata.sender to the browser console
         let newInboxName = InboxName.getRegularInboxNameFromParams(
           newSelf.external_metadata.sender,
           newSelf.internal_metadata.sender_subidentity,
@@ -192,13 +202,13 @@ class ShinkaiMessageBuilder {
         );
   
         if (typeof newInboxName === "string") {
-          return "Failed to generate inbox name";
+          throw new Error("Failed to generate inbox name");
         }
   
         // Update the inbox name in the internal metadata
         newSelf.internal_metadata.inbox = newInboxName.value;
       } else {
-        return "Inbox is required";
+        throw new Error("Inbox is required");
       }
     }
   
@@ -209,83 +219,78 @@ class ShinkaiMessageBuilder {
         message_content_schema: newSelf.message_content_schema,
       };
   
-      // if self.internal_metadata.encryption is not None
       let newMessageData: MessageData;
       if (newSelf.internal_metadata.encryption !== TSEncryptionMethod.None) {
-        let encryptedContent = await encryptMessageData(
-          data,
-          newSelf.my_encryption_secret_key,
-          newSelf.receiver_public_key,
-        );
+        let encryptedContent = await new UnencryptedMessageBody({
+          message_data: { unencrypted: data },
+          internal_metadata: newSelf.internal_metadata
+        }).encrypt(newSelf.my_encryption_secret_key, newSelf.receiver_public_key);
   
-        if (typeof encryptedContent === "string") {
-          return "Failed to encrypt data content";
+        if (encryptedContent instanceof EncryptedMessageBody) {
+          newMessageData = { encrypted: encryptedContent.encrypted };
+        } else {
+          throw new Error("Failed to encrypt data content");
         }
-  
-        newMessageData = encryptedContent;
       } else {
         // If encryption method is None, just return body
-        newMessageData = data;
+        newMessageData = { unencrypted: data };
       }
   
       let unsignedMsg = new ShinkaiMessage(
-        new MessageBody(new ShinkaiBody(newMessageData, newSelf.internal_metadata)),
-        newSelf.encryption,
+        new UnencryptedMessageBody({
+          message_data: newMessageData,
+          internal_metadata: newSelf.internal_metadata
+        }),
         newSelf.external_metadata,
+        newSelf.encryption,
         newSelf.version,
       );
-  
-      // Sign inner layer
-      let signResult = unsignedMsg.signInnerLayer(newSelf.my_signature_secret_key);
-      if (typeof signResult === "string") {
-        return "Failed to sign body";
-      }
-  
-      let signedBody: ShinkaiBody;
-      switch (unsignedMsg.body.constructor) {
-        case MessageBody:
-          signedBody = new ShinkaiBody(newMessageData, unsignedMsg.body.internal_metadata);
-          break;
-        default:
-          return "Expected unencrypted message body";
-      }
   
       // if self.encryption is not None
       let newBody: MessageBody;
       if (newSelf.encryption !== TSEncryptionMethod.None) {
         let secondPublicKey = newSelf.optional_second_public_key_receiver_node || newSelf.receiver_public_key;
   
-        let encryptedBody = await encryptMessageBody(
-          signedBody,
+        let encryptedBody = await unsignedMsg.body.encrypt(
           newSelf.my_encryption_secret_key,
           secondPublicKey,
         );
   
-        if (typeof encryptedBody === "string") {
-          return "Failed to encrypt body";
+        if (encryptedBody instanceof EncryptedMessageBody) {
+          newBody = encryptedBody;
+        } else {
+          throw new Error("Failed to encrypt body");
         }
-  
-        newBody = encryptedBody;
       } else {
         // If encryption method is None, just return body
-        newBody = new MessageBody(signedBody);
+        newBody = unsignedMsg.body;
       }
   
-      let unsignedMsg = new ShinkaiMessage(
+      let signedMsg = new ShinkaiMessage(
         newBody,
-        newSelf.encryption,
         newSelf.external_metadata,
+        newSelf.encryption,
         newSelf.version,
       );
-      let signedMsg = unsignedMsg.signOuterLayer(newSelf.my_signature_secret_key);
-  
-      if (typeof signedMsg === "string") {
-        return "Failed to sign message";
-      }
   
       return signedMsg;
     } else {
-      return "Missing fields";
+      throw new Error("Missing fields");
     }
+  }
+
+  public static ackMessage(
+    my_encryption_secret_key: EncryptionStaticKey,
+    my_signature_secret_key: SignatureStaticKey,
+    receiver_public_key: EncryptionPublicKey,
+    sender: ProfileName,
+    receiver: ProfileName,
+  ): Promise<ShinkaiMessage> {
+    return new ShinkaiMessageBuilder(my_encryption_secret_key, my_signature_secret_key, receiver_public_key)
+      .set_message_raw_content("ACK")
+      .set_internal_metadata("", "", TSEncryptionMethod.None)
+      .set_no_body_encryption()
+      .external_metadata_with_intra_sender(receiver, sender, "")
+      .build();
   }
 }
