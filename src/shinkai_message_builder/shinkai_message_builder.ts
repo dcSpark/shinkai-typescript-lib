@@ -24,7 +24,11 @@ import {
   MessageBody,
   UnencryptedMessageBody,
 } from "../shinkai_message/shinkai_message_body";
-import { MessageData } from "../shinkai_message/shinkai_message_data";
+import {
+  EncryptedMessageData,
+  MessageData,
+  UnencryptedMessageData,
+} from "../shinkai_message/shinkai_message_data";
 import { ShinkaiVersion } from "../shinkai_message/shinkai_version";
 import * as ed from "noble-ed25519";
 
@@ -357,37 +361,29 @@ export class ShinkaiMessageBuilder {
         message_content_schema: newSelf.message_content_schema,
       };
 
-      let newMessageData: MessageData;
+      let shinkaiBody: ShinkaiBody;
       if (newSelf.internal_metadata.encryption !== TSEncryptionMethod.None) {
-        let encryptedContent = await new UnencryptedMessageBody({
-          message_data: { unencrypted: data },
-          internal_metadata: newSelf.internal_metadata,
-        }).encrypt(
+        let encryptedData = await ShinkaiBody.createAndEncryptMessageData(
+          data,
+          newSelf.internal_metadata,
           newSelf.my_encryption_secret_key,
           newSelf.receiver_public_key
         );
 
-        if (encryptedContent instanceof EncryptedMessageBody) {
-          newMessageData = { encrypted: encryptedContent.encrypted };
-        } else {
-          throw new Error("Failed to encrypt data content");
-        }
+        shinkaiBody = await encryptedData.sign_inner_layer(
+          newSelf.my_signature_secret_key
+        );
       } else {
         // If encryption method is None, just return body
-        newMessageData = { unencrypted: data };
+        const newMessageData = new UnencryptedMessageData(data);
+        shinkaiBody = new ShinkaiBody(
+          newMessageData,
+          newSelf.internal_metadata
+        );
+        shinkaiBody = await shinkaiBody.sign_inner_layer(
+          newSelf.my_signature_secret_key
+        );
       }
-
-      let unsignedMsg = new ShinkaiMessage(
-        new UnencryptedMessageBody({
-          message_data: newMessageData,
-          internal_metadata: newSelf.internal_metadata,
-        }),
-        newSelf.external_metadata,
-        newSelf.encryption,
-        newSelf.version
-      );
-
-      await unsignedMsg.sign_inner_layer(newSelf.my_signature_secret_key);
 
       // if self.encryption is not None
       let newBody: MessageBody;
@@ -396,13 +392,14 @@ export class ShinkaiMessageBuilder {
           newSelf.optional_second_public_key_receiver_node ||
           newSelf.receiver_public_key;
 
-        newBody = await unsignedMsg.body.encrypt(
+        const messageBody = new UnencryptedMessageBody(shinkaiBody);
+        newBody = await messageBody.encrypt(
           newSelf.my_encryption_secret_key,
           secondPublicKey
         );
       } else {
         // If encryption method is None, just return body
-        newBody = unsignedMsg.body;
+        newBody = new UnencryptedMessageBody(shinkaiBody);
       }
 
       let signedMsg = new ShinkaiMessage(
@@ -412,7 +409,9 @@ export class ShinkaiMessageBuilder {
         newSelf.version
       );
 
-      signedMsg = await signedMsg.sign_outer_layer(newSelf.my_signature_secret_key);
+      signedMsg = await signedMsg.sign_outer_layer(
+        newSelf.my_signature_secret_key
+      );
       return signedMsg;
     } else {
       throw new Error("Missing fields");
@@ -872,9 +871,9 @@ export class ShinkaiMessageBuilder {
     const getLastUnreadMessagesFromInbox = {
       inbox,
       count,
-      offset
+      offset,
     };
-  
+
     return ShinkaiMessageBuilder.createCustomShinkaiMessageToNode(
       my_subidentity_encryption_sk,
       my_subidentity_signature_sk,
@@ -897,7 +896,7 @@ export class ShinkaiMessageBuilder {
     receiver: ProfileName
   ): Promise<ShinkaiMessage> {
     const addAgent = { agent };
-  
+
     return ShinkaiMessageBuilder.createCustomShinkaiMessageToNode(
       my_subidentity_encryption_sk,
       my_subidentity_signature_sk,
@@ -921,7 +920,7 @@ export class ShinkaiMessageBuilder {
     receiver: ProfileName
   ): Promise<ShinkaiMessage> {
     const readUpToTime = { inbox, upToTime };
-  
+
     return ShinkaiMessageBuilder.createCustomShinkaiMessageToNode(
       my_subidentity_encryption_sk,
       my_subidentity_signature_sk,

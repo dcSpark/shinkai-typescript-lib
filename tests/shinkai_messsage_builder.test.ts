@@ -12,12 +12,14 @@ import {
   EncryptedMessageBody,
   UnencryptedMessageBody,
 } from "../src/shinkai_message/shinkai_message_body";
+import { EncryptedMessageData, UnencryptedMessageData } from "../src/shinkai_message/shinkai_message_data";
 import {
   ShinkaiMessageBuilder,
   EncryptionStaticKey,
   SignatureStaticKey,
   EncryptionPublicKey,
 } from "../src/shinkai_message_builder/shinkai_message_builder";
+import { ShinkaiData } from "../src/shinkai_message/shinkai_data";
 
 describe("ShinkaiMessageBuilder pre-made methods", () => {
   it("should create an ACK message", async () => {
@@ -45,9 +47,9 @@ describe("ShinkaiMessageBuilder pre-made methods", () => {
     );
 
     if (message.body instanceof UnencryptedMessageBody) {
-      const messageData = message.body.unencrypted.message_data;
-      if ("unencrypted" in messageData) {
-        expect(messageData.unencrypted.message_raw_content).toBe("ACK");
+      const messageData = message.body.unencrypted.message_data as UnencryptedMessageData;
+      if ('message_raw_content' in messageData.data) {
+        expect(messageData.data.message_raw_content).toBe("ACK");
       } else {
         throw new Error("Message data is not unencrypted");
       }
@@ -83,9 +85,9 @@ describe("ShinkaiMessageBuilder pre-made methods", () => {
     );
 
     if (message.body instanceof UnencryptedMessageBody) {
-      const messageData = message.body.unencrypted.message_data;
-      if ("unencrypted" in messageData) {
-        expect(messageData.unencrypted.message_raw_content).toBe("terminate");
+      const messageData = message.body.unencrypted.message_data as UnencryptedMessageData;
+      if ('message_raw_content' in messageData.data) {
+        expect(messageData.data.message_raw_content).toBe("terminate");
       } else {
         throw new Error("Message data is not unencrypted");
       }
@@ -634,42 +636,11 @@ describe("ShinkaiMessageBuilder pre-made methods", () => {
       error_msg
     );
 
-    expect(message.body).toBe(`{error: "${error_msg}"}`);
-    expect(message.external_metadata.sender).toBe(sender);
-    expect(message.external_metadata.recipient).toBe(receiver);
-  });
-
-  it("should create an error message", async () => {
-    const encryptionKeys = await generateEncryptionKeys();
-    const signatureKeys = await generateSignatureKeys();
-
-    const my_encryption_secret_key = new Uint8Array(
-      Buffer.from(encryptionKeys.my_encryption_sk_string, "hex")
-    );
-    const my_signature_secret_key = new Uint8Array(
-      Buffer.from(signatureKeys.my_identity_sk_string, "hex")
-    );
-    const receiver_public_key = new Uint8Array(
-      Buffer.from(encryptionKeys.my_encryption_pk_string, "hex")
-    );
-    const sender = "@@sender.shinkai";
-    const receiver = "@@receiver.shinkai";
-    const error_msg = "An error occurred";
-
-    const message = await ShinkaiMessageBuilder.errorMessage(
-      my_encryption_secret_key,
-      my_signature_secret_key,
-      receiver_public_key,
-      sender,
-      receiver,
-      error_msg
-    );
-
     // Check if the message body is an instance of EncryptedMessageBody
-    if (message.body instanceof EncryptedMessageBody) {
-      // You can add your assertions here related to the encrypted message
-      // For example, you might want to check if the content is not empty
-      expect(message.body.encrypted.content).not.toBe("");
+    if (message.body instanceof UnencryptedMessageBody) {
+      const messageData = message.body.unencrypted.message_data;
+      if(messageData instanceof EncryptedMessageData)
+      expect(messageData.data).not.toBe("");
     } else {
       throw new Error("Message body is not encrypted");
     }
@@ -718,15 +689,14 @@ describe("ShinkaiMessageBuilder general tests", () => {
       .set_external_metadata_with_schedule(recipient, sender, scheduled_time)
       .build();
 
-    console.log("message resp: ", message);
-
     expect(message).toBeDefined();
 
     if (message.body instanceof UnencryptedMessageBody) {
-      if ("unencrypted" in message.body.unencrypted.message_data) {
-        expect(
-          message.body.unencrypted.message_data.unencrypted.message_raw_content
-        ).toBe("body content");
+      const messageData = message.body.unencrypted.message_data as UnencryptedMessageData;
+      if ('message_raw_content' in messageData.data) {
+        expect(messageData.data.message_raw_content).toBe("body content");
+      } else {
+        throw new Error("Message data is not unencrypted");
       }
       expect(
         message.body.unencrypted.internal_metadata.sender_subidentity

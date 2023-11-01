@@ -38,7 +38,7 @@ export class ShinkaiMessage {
 
   async sign_outer_layer(self_sk: Uint8Array): Promise<ShinkaiMessage> {
     const message_clone = new ShinkaiMessage(this.body, this.external_metadata, this.encryption, this.version);
-    message_clone.external_metadata.signature = (await sign_outer_layer(self_sk, this)).signature;
+    await sign_outer_layer(self_sk, this);
     return message_clone;
   }
 }

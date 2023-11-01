@@ -194,10 +194,7 @@ describe("Cryptography Functions", () => {
     const shinkaiMessage: ShinkaiMessage = JSON.parse(unsorted_messageJson);
 
     // Sign the message
-    const signedMessage = await sign_outer_layer(privateKey, shinkaiMessage);
-
-    // Overwrite the signature in shinkaiMessage with the one from signedMessage
-    shinkaiMessage.external_metadata.signature = signedMessage.signature;
+    await sign_outer_layer(privateKey, shinkaiMessage);
 
     // Verify the signature
     const isValid = await verify_outer_layer_signature(
@@ -293,29 +290,34 @@ describe("Cryptography Functions", () => {
       messageData.version
     );
 
-    // Sign the message
-    await sign_inner_layer(privateKey, shinkaiMessage);
+    if (shinkaiMessage.body instanceof UnencryptedMessageBody) {
+      // Sign the message
+      await sign_inner_layer(privateKey, shinkaiMessage.body.unencrypted);
 
-    // Verify the signature
-    const isValid = await verify_inner_layer_signature(
-      publicKey,
-      shinkaiMessage
-    );
+      // Verify the signature
+      const isValid = await verify_inner_layer_signature(
+        publicKey,
+        shinkaiMessage.body.unencrypted
+      );
 
-    // The signature should be valid
-    expect(isValid).toBe(true);
+      // The signature should be valid
+      expect(isValid).toBe(true);
+    } else {
+      throw new Error("Message body is not unencrypted");
+    }
   });
 
   test("check compatibility between crypto encryption libraries for key management", async () => {
     const keys = await generateEncryptionKeys();
-  
+
     // Convert keys from HexString to Uint8Array
     const privateKey = hexToBytes(keys.my_encryption_sk_string);
     const originalPublicKey = hexToBytes(keys.my_encryption_pk_string);
-  
+
     // Compute the public key from the private key using tweetnacl
-    const computedPublicKey = nacl.box.keyPair.fromSecretKey(privateKey).publicKey;
-  
+    const computedPublicKey =
+      nacl.box.keyPair.fromSecretKey(privateKey).publicKey;
+
     // The computed public key should be the same as the original public key
     expect(toHexString(computedPublicKey)).toBe(toHexString(originalPublicKey));
   });

@@ -1,16 +1,19 @@
-import { sign_inner_layer, verify_inner_layer_signature } from "../cryptography/shinkai_signing";
+import {
+  sign_inner_layer,
+  verify_inner_layer_signature,
+} from "../cryptography/shinkai_signing";
+import { ShinkaiData } from "./shinkai_data";
 import { InternalMetadata } from "./shinkai_internal_metadata";
-import { MessageData } from "./shinkai_message_data";
+import { MessageData, UnencryptedMessageData } from "./shinkai_message_data";
 
-export interface ShinkaiBody {
+export interface IShinkaiBody {
   message_data: MessageData;
   internal_metadata: InternalMetadata;
-
   verify_inner_layer_signature(self_pk: Uint8Array): Promise<boolean>;
   sign_inner_layer(self_sk: Uint8Array): Promise<ShinkaiBody>;
 }
 
-export class ShinkaiBodyImpl implements ShinkaiBody {
+export class ShinkaiBody implements IShinkaiBody {
   message_data: MessageData;
   internal_metadata: InternalMetadata;
 
@@ -24,8 +27,24 @@ export class ShinkaiBodyImpl implements ShinkaiBody {
   }
 
   async sign_inner_layer(self_sk: Uint8Array): Promise<ShinkaiBody> {
-    const body_clone = new ShinkaiBodyImpl(this.message_data, this.internal_metadata);
-    body_clone.internal_metadata.signature = (await sign_inner_layer(self_sk, this)).signature;
+    const body_clone = new ShinkaiBody(
+      this.message_data,
+      this.internal_metadata
+    );
+    await sign_inner_layer(self_sk, this);
     return body_clone;
+  }
+
+  static async createAndEncryptMessageData(
+    data: ShinkaiData,
+    internal_metadata: InternalMetadata,
+    senderPrivateKey: Uint8Array,
+    recipientPublicKey: Uint8Array
+  ): Promise<ShinkaiBody> {
+    const message_data = await new UnencryptedMessageData(data).encrypt(
+      senderPrivateKey,
+      recipientPublicKey
+    );
+    return new ShinkaiBody(message_data, internal_metadata);
   }
 }

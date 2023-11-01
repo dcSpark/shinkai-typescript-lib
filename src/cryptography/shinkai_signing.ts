@@ -2,6 +2,7 @@ import * as ed from "noble-ed25519";
 import { blake3 } from "@noble/hashes/blake3";
 import { ShinkaiMessage } from "../shinkai_message/shinkai_message";
 import { UnencryptedMessageBody } from "../shinkai_message/shinkai_message_body";
+import { ShinkaiBody } from "../shinkai_message/shinkai_body";
 
 // TODO(Nico): move somewhere else
 export class ShinkaiMessageError extends Error {
@@ -17,7 +18,6 @@ export async function verify_outer_layer_signature(
 ): Promise<boolean> {
   try {
     const hexSignature = shinkaiMessage.external_metadata.signature;
-    console.log("Signature from message:", hexSignature);
     if (!hexSignature) {
       throw new ShinkaiMessageError(`Signature is missing`);
     }
@@ -57,11 +57,8 @@ export async function verify_outer_layer_signature(
 export async function sign_outer_layer(
   secretKey: Uint8Array,
   shinkaiMessage: ShinkaiMessage
-): Promise<{ signature: string }> {
+): Promise<void> {
   try {
-    console.log("Signing message:", shinkaiMessage);
-    console.log("Secret key:", secretKey);
-
     // Ensure that external_metadata.signature is empty
     let messageCopy = JSON.parse(JSON.stringify(shinkaiMessage));
     messageCopy.external_metadata.signature = "";
@@ -80,8 +77,6 @@ export async function sign_outer_layer(
     shinkaiMessage.external_metadata.signature = Array.from(signature)
       .map((b) => b.toString(16).padStart(2, "0"))
       .join("");
-
-    return shinkaiMessage.external_metadata;
   } catch (e) {
     if (e instanceof Error) {
       throw new ShinkaiMessageError(`Signing error: ${e.message}`);
@@ -93,16 +88,12 @@ export async function sign_outer_layer(
 
 export async function sign_inner_layer(
   secretKey: Uint8Array,
-  shinkaiMessage: ShinkaiMessage
+  shinkaiBody: ShinkaiBody
 ): Promise<void> {
   try {
-    if (!(shinkaiMessage.body instanceof UnencryptedMessageBody)) {
-      throw new ShinkaiMessageError('Message body is not unencrypted');
-    }
-
     // Ensure that body.unencrypted.internal_metadata.signature is empty
-    let messageCopy = JSON.parse(JSON.stringify(shinkaiMessage));
-    messageCopy.body.unencrypted.internal_metadata.signature = "";
+    let messageCopy: ShinkaiBody = JSON.parse(JSON.stringify(shinkaiBody));
+    messageCopy.internal_metadata.signature = "";
 
     const sortedShinkaiMessage = sortObjectKeys(messageCopy);
     const messageHash = blake3FromObj(sortedShinkaiMessage);
@@ -115,11 +106,12 @@ export async function sign_inner_layer(
     );
 
     const signature = await ed.sign(messageHashBytes, secretKey);
-    shinkaiMessage.body.unencrypted.internal_metadata.signature = Array.from(signature)
+    shinkaiBody.internal_metadata.signature = Array.from(signature)
       .map((b) => b.toString(16).padStart(2, "0"))
       .join("");
   } catch (e) {
     if (e instanceof Error) {
+      console.log(shinkaiBody);
       throw new ShinkaiMessageError(`Signing error: ${e.message}`);
     } else {
       throw new ShinkaiMessageError(`Signing error: ${e}`);
@@ -129,15 +121,11 @@ export async function sign_inner_layer(
 
 export async function verify_inner_layer_signature(
   publicKey: Uint8Array,
-  shinkaiMessage: ShinkaiMessage
+  shinkaiBody: ShinkaiBody
 ): Promise<boolean> {
   try {
-    if (!(shinkaiMessage.body instanceof UnencryptedMessageBody)) {
-      throw new ShinkaiMessageError('Message body is not unencrypted');
-    }
-
-    const hexSignature = shinkaiMessage.body.unencrypted.internal_metadata.signature;
-    console.log("Signature from message:", hexSignature);
+    const hexSignature = shinkaiBody.internal_metadata.signature;
+    console.log("Signature from body:", hexSignature);
     if (!hexSignature) {
       throw new ShinkaiMessageError(`Signature is missing`);
     }
@@ -150,18 +138,18 @@ export async function verify_inner_layer_signature(
     );
 
     // Create a copy of the message with an empty signature
-    let messageCopy = JSON.parse(JSON.stringify(shinkaiMessage));
-    messageCopy.body.unencrypted.internal_metadata.signature = "";
+    let bodyCopy = JSON.parse(JSON.stringify(shinkaiBody));
+    bodyCopy.internal_metadata.signature = "";
 
-    const sortedShinkaiMessage = sortObjectKeys(messageCopy);
+    const sortedShinkaiBody = sortObjectKeys(bodyCopy);
     // Calculate the hash of the modified message
-    const messageHash = blake3FromObj(sortedShinkaiMessage);
-    const messageHashMatched = messageHash.match(/.{1,2}/g);
-    if (!messageHashMatched) {
+    const bodyHash = blake3FromObj(sortedShinkaiBody);
+    const bodyHashMatched = bodyHash.match(/.{1,2}/g);
+    if (!bodyHashMatched) {
       throw new ShinkaiMessageError(`Invalid message hash format`);
     }
     const messageHashBytes = new Uint8Array(
-      messageHashMatched.map((byte) => parseInt(byte, 16))
+      bodyHashMatched.map((byte) => parseInt(byte, 16))
     );
 
     return await ed.verify(signatureBytes, messageHashBytes, publicKey);
@@ -183,7 +171,7 @@ function blake3FromObj(obj: any): string {
   return hashAltHex;
 }
 
-function sortObjectKeys(obj: ShinkaiMessage): object {
+function sortObjectKeys(obj: any): object {
   if (typeof obj !== "object" || obj === null) {
     return obj;
   }
@@ -199,15 +187,15 @@ function sortObjectKeys(obj: ShinkaiMessage): object {
     .forEach((key: string) => {
       if (
         key in obj &&
-        typeof obj[key as keyof ShinkaiMessage] === "object" &&
-        obj[key as keyof ShinkaiMessage] !== null
+        typeof obj[key] === "object" &&
+        obj[key] !== null
       ) {
         sortedObj[key] =
-          obj[key as keyof ShinkaiMessage] instanceof Object
-            ? sortObjectKeys(obj[key as keyof ShinkaiMessage] as any)
-            : obj[key as keyof ShinkaiMessage];
+          obj[key] instanceof Object
+            ? sortObjectKeys(obj[key])
+            : obj[key];
       } else {
-        sortedObj[key] = obj[key as keyof ShinkaiMessage];
+        sortedObj[key] = obj[key];
       }
     });
 
