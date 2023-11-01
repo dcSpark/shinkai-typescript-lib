@@ -1,7 +1,7 @@
 
-export const TSEncryptionMethod = {
-  DiffieHellmanChaChaPoly1305: "DiffieHellmanChaChaPoly1305",
-  None: "None",
+export enum TSEncryptionMethod {
+  DiffieHellmanChaChaPoly1305 = "DiffieHellmanChaChaPoly1305",
+  None = "None",
 }
 
 export enum MessageSchemaType {
@@ -85,4 +85,12 @@ export interface SleepAPI {}
 
 export interface APIAddAgentRequest {
   agent: SerializedAgent;
+}
+
+export interface RegistrationCode {
+  code: string;
+  profileName: string;
+  identityPk: string;
+  encryptionPk: string;
+  permissionType: string;
 }
