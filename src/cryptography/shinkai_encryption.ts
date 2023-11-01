@@ -8,6 +8,7 @@ import { blake3 } from "@noble/hashes/blake3";
 import crypto from "crypto";
 import { ShinkaiData } from "../shinkai_message/shinkai_data";
 import { ShinkaiMessageError } from "./shinkai_signing";
+import { UnencryptedMessageBody } from "../shinkai_message/shinkai_message_body";
 
 export type HexString = string;
 // Previous
@@ -78,7 +79,7 @@ export async function decryptMessageBody(
   encryptedBody: string,
   self_sk: Uint8Array,
   sender_pk: Uint8Array
-): Promise<string | null> {
+): Promise<UnencryptedMessageBody> {
   await sodium.ready;
 
   const parts: string[] = encryptedBody.split(":");
@@ -109,7 +110,8 @@ export async function decryptMessageBody(
   const decrypted_body = sodium.to_string(plaintext_bytes);
 
   try {
-    return JSON.parse(decrypted_body);
+    const messageBody: UnencryptedMessageBody = JSON.parse(decrypted_body);
+    return messageBody;
   } catch (e) {
     throw new Error("Decryption failure!: " + (e as any));
   }

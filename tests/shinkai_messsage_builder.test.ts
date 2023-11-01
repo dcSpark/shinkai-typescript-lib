@@ -12,7 +12,10 @@ import {
   EncryptedMessageBody,
   UnencryptedMessageBody,
 } from "../src/shinkai_message/shinkai_message_body";
-import { EncryptedMessageData, UnencryptedMessageData } from "../src/shinkai_message/shinkai_message_data";
+import {
+  EncryptedMessageData,
+  UnencryptedMessageData,
+} from "../src/shinkai_message/shinkai_message_data";
 import {
   ShinkaiMessageBuilder,
   EncryptionStaticKey,
@@ -47,8 +50,9 @@ describe("ShinkaiMessageBuilder pre-made methods", () => {
     );
 
     if (message.body instanceof UnencryptedMessageBody) {
-      const messageData = message.body.unencrypted.message_data as UnencryptedMessageData;
-      if ('message_raw_content' in messageData.data) {
+      const messageData = message.body.unencrypted
+        .message_data as UnencryptedMessageData;
+      if ("message_raw_content" in messageData.data) {
         expect(messageData.data.message_raw_content).toBe("ACK");
       } else {
         throw new Error("Message data is not unencrypted");
@@ -85,8 +89,9 @@ describe("ShinkaiMessageBuilder pre-made methods", () => {
     );
 
     if (message.body instanceof UnencryptedMessageBody) {
-      const messageData = message.body.unencrypted.message_data as UnencryptedMessageData;
-      if ('message_raw_content' in messageData.data) {
+      const messageData = message.body.unencrypted
+        .message_data as UnencryptedMessageData;
+      if ("message_raw_content" in messageData.data) {
         expect(messageData.data.message_raw_content).toBe("terminate");
       } else {
         throw new Error("Message data is not unencrypted");
@@ -639,8 +644,8 @@ describe("ShinkaiMessageBuilder pre-made methods", () => {
     // Check if the message body is an instance of EncryptedMessageBody
     if (message.body instanceof UnencryptedMessageBody) {
       const messageData = message.body.unencrypted.message_data;
-      if(messageData instanceof EncryptedMessageData)
-      expect(messageData.data).not.toBe("");
+      if (messageData instanceof EncryptedMessageData)
+        expect(messageData.data).not.toBe("");
     } else {
       throw new Error("Message body is not encrypted");
     }
@@ -692,8 +697,9 @@ describe("ShinkaiMessageBuilder general tests", () => {
     expect(message).toBeDefined();
 
     if (message.body instanceof UnencryptedMessageBody) {
-      const messageData = message.body.unencrypted.message_data as UnencryptedMessageData;
-      if ('message_raw_content' in messageData.data) {
+      const messageData = message.body.unencrypted
+        .message_data as UnencryptedMessageData;
+      if ("message_raw_content" in messageData.data) {
         expect(messageData.data.message_raw_content).toBe("body content");
       } else {
         throw new Error("Message data is not unencrypted");
@@ -716,5 +722,113 @@ describe("ShinkaiMessageBuilder general tests", () => {
     expect(
       message.verify_outer_layer_signature(my_identity_public_key)
     ).toBeTruthy();
+  });
+
+  it("should build a message with all fields and body encryption", async () => {
+    const my_identity_sk = await generateSignatureKeys();
+    const my_encryption_sk = await generateEncryptionKeys();
+    const node2_encryption_pk = await generateEncryptionKeys();
+
+    const my_encryption_secret_key = new Uint8Array(
+      Buffer.from(my_encryption_sk.my_encryption_sk_string, "hex")
+    );
+    const my_identity_secret_key = new Uint8Array(
+      Buffer.from(my_identity_sk.my_identity_sk_string, "hex")
+    );
+    const my_identity_public_key = new Uint8Array(
+      Buffer.from(my_identity_sk.my_identity_pk_string, "hex")
+    );
+    const receiver_public_key = new Uint8Array(
+      Buffer.from(node2_encryption_pk.my_encryption_pk_string, "hex")
+    );
+
+    const recipient = "@@other_node.shinkai";
+    const sender = "@@my_node.shinkai";
+
+    const messageBuilder = new ShinkaiMessageBuilder(
+      my_encryption_secret_key,
+      my_identity_secret_key,
+      receiver_public_key
+    );
+
+    await messageBuilder.init();
+
+    const message = await messageBuilder
+      .set_message_raw_content("body content")
+      .set_body_encryption(TSEncryptionMethod.DiffieHellmanChaChaPoly1305)
+      .set_message_schema_type(MessageSchemaType.TextContent)
+      .set_internal_metadata("", "", TSEncryptionMethod.None)
+      .set_external_metadata(recipient, sender)
+      .build();
+
+    expect(message).toBeDefined();
+
+
+    if (message.body instanceof EncryptedMessageBody) {
+      const decryptedMessage = await message.decrypt_outer_layer(
+        my_encryption_secret_key,
+        receiver_public_key
+      );
+
+      if (decryptedMessage.body instanceof UnencryptedMessageBody) {
+        const messageData = decryptedMessage.body.unencrypted
+          .message_data as UnencryptedMessageData;
+        if ("message_raw_content" in messageData.data) {
+          expect(messageData.data.message_raw_content).toBe("body content");
+        } else {
+          throw new Error("Message data is not unencrypted");
+        }
+        expect(
+          decryptedMessage.body.unencrypted.internal_metadata.sender_subidentity
+        ).toBe("");
+        expect(
+          decryptedMessage.body.unencrypted.internal_metadata
+            .recipient_subidentity
+        ).toBe("");
+        expect(decryptedMessage.body.unencrypted.internal_metadata.inbox).toBe(
+          "inbox::@@my_node.shinkai::@@other_node.shinkai::false"
+        );
+      }
+    }
+
+    expect(message.encryption).toBe(
+      TSEncryptionMethod.DiffieHellmanChaChaPoly1305
+    );
+    expect(message.external_metadata.sender).toBe(sender);
+    expect(message.external_metadata.recipient).toBe(recipient);
+    expect(
+      message.verify_outer_layer_signature(my_identity_public_key)
+    ).toBeTruthy();
+  });
+
+  it("should fail to build a message with missing fields", async () => {
+    const my_identity_sk = await generateSignatureKeys();
+    const my_encryption_sk = await generateEncryptionKeys();
+    const node2_encryption_pk = await generateEncryptionKeys();
+  
+    const my_encryption_secret_key = new Uint8Array(
+      Buffer.from(my_encryption_sk.my_encryption_sk_string, "hex")
+    );
+    const my_identity_secret_key = new Uint8Array(
+      Buffer.from(my_identity_sk.my_identity_sk_string, "hex")
+    );
+    const receiver_public_key = new Uint8Array(
+      Buffer.from(node2_encryption_pk.my_encryption_pk_string, "hex")
+    );
+  
+    const messageBuilder = new ShinkaiMessageBuilder(
+      my_encryption_secret_key,
+      my_identity_secret_key,
+      receiver_public_key
+    );
+  
+    await messageBuilder.init();
+  
+    try {
+      const message = await messageBuilder.build();
+      fail("Message build should have thrown an error due to missing fields");
+    } catch (error) {
+      expect(error).toBeDefined();
+    }
   });
 });
