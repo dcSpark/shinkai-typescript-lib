@@ -3,7 +3,7 @@ import { blake3 } from "@noble/hashes/blake3";
 import { ShinkaiMessage } from "../shinkai_message/shinkai_message";
 import { UnencryptedMessageBody } from "../shinkai_message/shinkai_message_body";
 
-// TODO(Nico): move somewhere
+// TODO(Nico): move somewhere else
 export class ShinkaiMessageError extends Error {
   constructor(message?: string) {
     super(message);
@@ -59,6 +59,9 @@ export async function sign_outer_layer(
   shinkaiMessage: ShinkaiMessage
 ): Promise<{ signature: string }> {
   try {
+    console.log("Signing message:", shinkaiMessage);
+    console.log("Secret key:", secretKey);
+
     // Ensure that external_metadata.signature is empty
     let messageCopy = JSON.parse(JSON.stringify(shinkaiMessage));
     messageCopy.external_metadata.signature = "";

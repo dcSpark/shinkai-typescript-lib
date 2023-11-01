@@ -11,6 +11,7 @@ import { InboxName } from "../schemas/inbox_name";
 import {
   JobScope,
   MessageSchemaType,
+  SerializedAgent,
   TSEncryptionMethod,
 } from "../schemas/schema_types";
 import { ShinkaiBody } from "../shinkai_message/shinkai_body";
@@ -107,7 +108,7 @@ export class ShinkaiMessageBuilder {
     };
     return this;
   }
-  
+
   set_internal_metadata_with_inbox(
     sender_subidentity: string,
     recipient_subidentity: string,
@@ -124,7 +125,7 @@ export class ShinkaiMessageBuilder {
     };
     return this;
   }
-  
+
   set_internal_metadata_with_schema(
     sender_subidentity: string,
     recipient_subidentity: string,
@@ -155,7 +156,7 @@ export class ShinkaiMessageBuilder {
     };
     return this;
   }
-  
+
   set_empty_non_encrypted_internal_metadata(): this {
     let signature = "";
     this.internal_metadata = {
@@ -183,8 +184,12 @@ export class ShinkaiMessageBuilder {
     };
     return this;
   }
-  
-  set_external_metadata_with_other(recipient: ProfileName, sender: ProfileName, other: string): this {
+
+  set_external_metadata_with_other(
+    recipient: ProfileName,
+    sender: ProfileName,
+    other: string
+  ): this {
     let signature = "";
     let intra_sender = "";
     let scheduled_time = new Date().toISOString();
@@ -199,7 +204,7 @@ export class ShinkaiMessageBuilder {
     return this;
   }
 
-  external_metadata_with_other_and_intra_sender(
+  set_external_metadata_with_other_and_intra_sender(
     recipient: ProfileName,
     sender: ProfileName,
     other: string,
@@ -218,7 +223,7 @@ export class ShinkaiMessageBuilder {
     return this;
   }
 
-  external_metadata_with_intra_sender(
+  set_external_metadata_with_intra_sender(
     recipient: ProfileName,
     sender: ProfileName,
     intra_sender: string
@@ -237,7 +242,7 @@ export class ShinkaiMessageBuilder {
     return this;
   }
 
-  external_metadata_with_schedule(
+  set_external_metadata_with_schedule(
     recipient: ProfileName,
     sender: ProfileName,
     scheduled_time: string
@@ -382,6 +387,8 @@ export class ShinkaiMessageBuilder {
         newSelf.version
       );
 
+      await unsignedMsg.sign_inner_layer(newSelf.my_signature_secret_key);
+
       // if self.encryption is not None
       let newBody: MessageBody;
       if (newSelf.encryption !== TSEncryptionMethod.None) {
@@ -405,6 +412,7 @@ export class ShinkaiMessageBuilder {
         newSelf.version
       );
 
+      signedMsg = await signedMsg.sign_outer_layer(newSelf.my_signature_secret_key);
       return signedMsg;
     } else {
       throw new Error("Missing fields");
@@ -426,7 +434,7 @@ export class ShinkaiMessageBuilder {
       .set_message_raw_content("ACK")
       .set_internal_metadata("", "", TSEncryptionMethod.None)
       .set_no_body_encryption()
-      .external_metadata_with_intra_sender(receiver, sender, "")
+      .set_external_metadata_with_intra_sender(receiver, sender, "")
       .build();
   }
 
@@ -456,7 +464,7 @@ export class ShinkaiMessageBuilder {
       )
       .set_message_schema_type(MessageSchemaType.JobCreationSchema)
       .set_body_encryption(TSEncryptionMethod.DiffieHellmanChaChaPoly1305)
-      .external_metadata_with_intra_sender(
+      .set_external_metadata_with_intra_sender(
         node_receiver,
         sender,
         sender_subidentity
@@ -494,7 +502,11 @@ export class ShinkaiMessageBuilder {
       )
       .set_message_schema_type(MessageSchemaType.JobMessageSchema)
       .set_body_encryption(TSEncryptionMethod.DiffieHellmanChaChaPoly1305)
-      .external_metadata_with_intra_sender(node_receiver, node_sender, sender_subidentity)
+      .set_external_metadata_with_intra_sender(
+        node_receiver,
+        node_sender,
+        sender_subidentity
+      )
       .build();
   }
 
@@ -507,13 +519,13 @@ export class ShinkaiMessageBuilder {
   ): Promise<ShinkaiMessage> {
     const jobMessage = { job_id, content, files_inbox: "" };
     const body = JSON.stringify(jobMessage);
-  
+
     const inbox = InboxName.getJobInboxNameFromParams(job_id).value;
-  
+
     // Use for placeholder. These messages *are not* encrypted so it's not required
     const placeholder_encryption_sk = new Uint8Array(32); // Assuming 32 bytes for the key
     const placeholder_encryption_pk = new Uint8Array(32); // Assuming 32 bytes for the key
-  
+
     return new ShinkaiMessageBuilder(
       placeholder_encryption_sk,
       my_signature_secret_key,
@@ -528,7 +540,7 @@ export class ShinkaiMessageBuilder {
         TSEncryptionMethod.None
       )
       .set_no_body_encryption()
-      .external_metadata_with_intra_sender(node_receiver, node_sender, "")
+      .set_external_metadata_with_intra_sender(node_receiver, node_sender, "")
       .build();
   }
 
@@ -547,7 +559,7 @@ export class ShinkaiMessageBuilder {
       .set_message_raw_content("terminate")
       .set_internal_metadata("", "", TSEncryptionMethod.None)
       .set_no_body_encryption()
-      .external_metadata_with_intra_sender(receiver, sender, "")
+      .set_external_metadata_with_intra_sender(receiver, sender, "")
       .build();
   }
 
@@ -562,7 +574,7 @@ export class ShinkaiMessageBuilder {
     schema: MessageSchemaType
   ): Promise<ShinkaiMessage> {
     const body = JSON.stringify(data);
-  
+
     // Convert encryption public key to string
     const my_subidentity_encryption_pk = nacl.box.keyPair.fromSecretKey(
       my_subidentity_encryption_sk
@@ -570,7 +582,7 @@ export class ShinkaiMessageBuilder {
     const other = Array.from(my_subidentity_encryption_pk)
       .map((byte) => byte.toString(16).padStart(2, "0"))
       .join("");
-  
+
     return new ShinkaiMessageBuilder(
       my_subidentity_encryption_sk,
       my_subidentity_signature_sk,
@@ -602,8 +614,10 @@ export class ShinkaiMessageBuilder {
     receiver: ProfileName
   ): Promise<ShinkaiMessage> {
     const profile_signature_pk = await ed.getPublicKey(profile_signature_sk);
-    const profile_encryption_pk = nacl.box.keyPair.fromSecretKey(profile_encryption_sk).publicKey;
-  
+    const profile_encryption_pk = nacl.box.keyPair.fromSecretKey(
+      profile_encryption_sk
+    ).publicKey;
+
     const registration_code = {
       code,
       registration_name,
@@ -618,7 +632,7 @@ export class ShinkaiMessageBuilder {
       identity_type,
       permission_type,
     };
-  
+
     return ShinkaiMessageBuilder.createCustomShinkaiMessageToNode(
       profile_encryption_sk,
       profile_signature_sk,
@@ -629,5 +643,314 @@ export class ShinkaiMessageBuilder {
       receiver,
       MessageSchemaType.UseRegistrationCode
     );
+  }
+
+  public static async useCodeRegistrationForDevice(
+    my_device_encryption_sk: EncryptionStaticKey,
+    my_device_signature_sk: SignatureStaticKey,
+    profile_encryption_sk: EncryptionStaticKey,
+    profile_signature_sk: SignatureStaticKey,
+    receiver_public_key: EncryptionPublicKey,
+    code: string,
+    identity_type: string,
+    permission_type: string,
+    registration_name: string,
+    sender_subidentity: string,
+    sender: ProfileName,
+    receiver: ProfileName
+  ): Promise<ShinkaiMessage> {
+    const my_device_signature_pk = await ed.getPublicKey(
+      my_device_signature_sk
+    );
+    const my_device_encryption_pk = nacl.box.keyPair.fromSecretKey(
+      my_device_encryption_sk
+    ).publicKey;
+    const profile_signature_pk = await ed.getPublicKey(profile_signature_sk);
+    const profile_encryption_pk = nacl.box.keyPair.fromSecretKey(
+      profile_encryption_sk
+    ).publicKey;
+    const other = Array.from(my_device_encryption_pk)
+      .map((byte) => byte.toString(16).padStart(2, "0"))
+      .join("");
+
+    const registration_code = {
+      code,
+      registration_name,
+      device_identity_pk: Array.from(my_device_signature_pk)
+        .map((byte) => byte.toString(16).padStart(2, "0"))
+        .join(""),
+      device_encryption_pk: other,
+      profile_identity_pk: Array.from(profile_signature_pk)
+        .map((byte) => byte.toString(16).padStart(2, "0"))
+        .join(""),
+      profile_encryption_pk: Array.from(profile_encryption_pk)
+        .map((byte) => byte.toString(16).padStart(2, "0"))
+        .join(""),
+      identity_type,
+      permission_type,
+    };
+
+    return ShinkaiMessageBuilder.createCustomShinkaiMessageToNode(
+      my_device_encryption_sk,
+      my_device_signature_sk,
+      receiver_public_key,
+      registration_code,
+      sender_subidentity,
+      sender,
+      receiver,
+      MessageSchemaType.UseRegistrationCode
+    );
+  }
+
+  public static async initialRegistrationWithNoCodeForDevice(
+    my_device_encryption_sk: EncryptionStaticKey,
+    my_device_signature_sk: SignatureStaticKey,
+    profile_encryption_sk: EncryptionStaticKey,
+    profile_signature_sk: SignatureStaticKey,
+    registration_name: string,
+    sender_subidentity: string,
+    sender: ProfileName,
+    receiver: ProfileName
+  ): Promise<ShinkaiMessage> {
+    const my_device_signature_pk = await ed.getPublicKey(
+      my_device_signature_sk
+    );
+    const my_device_encryption_pk = nacl.box.keyPair.fromSecretKey(
+      my_device_encryption_sk
+    ).publicKey;
+    const profile_signature_pk = await ed.getPublicKey(profile_signature_sk);
+    const profile_encryption_pk = nacl.box.keyPair.fromSecretKey(
+      profile_encryption_sk
+    ).publicKey;
+    const other = Array.from(my_device_encryption_pk)
+      .map((byte) => byte.toString(16).padStart(2, "0"))
+      .join("");
+
+    const identity_type = "device";
+    const permission_type = "admin";
+
+    const registration_code = {
+      code: "",
+      registration_name,
+      device_identity_pk: Array.from(my_device_signature_pk)
+        .map((byte) => byte.toString(16).padStart(2, "0"))
+        .join(""),
+      device_encryption_pk: other,
+      profile_identity_pk: Array.from(profile_signature_pk)
+        .map((byte) => byte.toString(16).padStart(2, "0"))
+        .join(""),
+      profile_encryption_pk: Array.from(profile_encryption_pk)
+        .map((byte) => byte.toString(16).padStart(2, "0"))
+        .join(""),
+      identity_type,
+      permission_type,
+    };
+
+    const body = JSON.stringify(registration_code);
+
+    return new ShinkaiMessageBuilder(
+      my_device_encryption_sk,
+      my_device_signature_sk,
+      my_device_encryption_pk
+    )
+      .set_message_raw_content(body)
+      .set_body_encryption(TSEncryptionMethod.None)
+      .set_internal_metadata_with_schema(
+        sender_subidentity,
+        "",
+        "",
+        MessageSchemaType.UseRegistrationCode,
+        TSEncryptionMethod.None
+      )
+      .set_external_metadata_with_other(receiver, sender, other)
+      .build();
+  }
+
+  public static async createFilesInboxWithSymKey(
+    my_subidentity_encryption_sk: EncryptionStaticKey,
+    my_subidentity_signature_sk: SignatureStaticKey,
+    receiver_public_key: EncryptionPublicKey,
+    inbox: string,
+    symmetric_key_sk: string,
+    sender_subidentity: string,
+    sender: ProfileName,
+    receiver: ProfileName
+  ): Promise<ShinkaiMessage> {
+    return new ShinkaiMessageBuilder(
+      my_subidentity_encryption_sk,
+      my_subidentity_signature_sk,
+      receiver_public_key
+    )
+      .set_message_raw_content(symmetric_key_sk)
+      .set_body_encryption(TSEncryptionMethod.DiffieHellmanChaChaPoly1305)
+      .set_internal_metadata_with_schema(
+        sender_subidentity,
+        "",
+        inbox,
+        MessageSchemaType.SymmetricKeyExchange,
+        TSEncryptionMethod.None
+      )
+      .set_external_metadata_with_intra_sender(
+        receiver,
+        sender,
+        sender_subidentity
+      )
+      .build();
+  }
+
+  public static async getAllInboxesForProfile(
+    my_subidentity_encryption_sk: EncryptionStaticKey,
+    my_subidentity_signature_sk: SignatureStaticKey,
+    receiver_public_key: EncryptionPublicKey,
+    full_profile: string,
+    sender_subidentity: string,
+    sender: ProfileName,
+    receiver: ProfileName
+  ): Promise<ShinkaiMessage> {
+    return new ShinkaiMessageBuilder(
+      my_subidentity_encryption_sk,
+      my_subidentity_signature_sk,
+      receiver_public_key
+    )
+      .set_message_raw_content(full_profile)
+      .set_internal_metadata_with_schema(
+        sender_subidentity,
+        "",
+        "",
+        MessageSchemaType.TextContent,
+        TSEncryptionMethod.None
+      )
+      .set_body_encryption(TSEncryptionMethod.DiffieHellmanChaChaPoly1305)
+      .set_external_metadata_with_intra_sender(
+        receiver,
+        sender,
+        sender_subidentity
+      )
+      .build();
+  }
+
+  public static async getLastMessagesFromInbox(
+    my_subidentity_encryption_sk: EncryptionStaticKey,
+    my_subidentity_signature_sk: SignatureStaticKey,
+    receiver_public_key: EncryptionPublicKey,
+    inbox: string,
+    count: number,
+    offset: string | null,
+    sender_subidentity: string,
+    sender: ProfileName,
+    receiver: ProfileName
+  ): Promise<ShinkaiMessage> {
+    const getLastMessagesFromInbox = {
+      inbox,
+      count,
+      offset,
+    };
+
+    return ShinkaiMessageBuilder.createCustomShinkaiMessageToNode(
+      my_subidentity_encryption_sk,
+      my_subidentity_signature_sk,
+      receiver_public_key,
+      getLastMessagesFromInbox,
+      sender_subidentity,
+      sender,
+      receiver,
+      MessageSchemaType.APIGetMessagesFromInboxRequest
+    );
+  }
+
+  public static async getLastUnreadMessagesFromInbox(
+    my_subidentity_encryption_sk: EncryptionStaticKey,
+    my_subidentity_signature_sk: SignatureStaticKey,
+    receiver_public_key: EncryptionPublicKey,
+    inbox: string,
+    count: number,
+    offset: string | null,
+    sender_subidentity: string,
+    sender: ProfileName,
+    receiver: ProfileName
+  ): Promise<ShinkaiMessage> {
+    const getLastUnreadMessagesFromInbox = {
+      inbox,
+      count,
+      offset
+    };
+  
+    return ShinkaiMessageBuilder.createCustomShinkaiMessageToNode(
+      my_subidentity_encryption_sk,
+      my_subidentity_signature_sk,
+      receiver_public_key,
+      getLastUnreadMessagesFromInbox,
+      sender_subidentity,
+      sender,
+      receiver,
+      MessageSchemaType.APIGetMessagesFromInboxRequest
+    );
+  }
+
+  public static async requestAddAgent(
+    my_subidentity_encryption_sk: EncryptionStaticKey,
+    my_subidentity_signature_sk: SignatureStaticKey,
+    receiver_public_key: EncryptionPublicKey,
+    agent: SerializedAgent,
+    sender_subidentity: string,
+    sender: ProfileName,
+    receiver: ProfileName
+  ): Promise<ShinkaiMessage> {
+    const addAgent = { agent };
+  
+    return ShinkaiMessageBuilder.createCustomShinkaiMessageToNode(
+      my_subidentity_encryption_sk,
+      my_subidentity_signature_sk,
+      receiver_public_key,
+      addAgent,
+      sender_subidentity,
+      sender,
+      receiver,
+      MessageSchemaType.APIAddAgentRequest
+    );
+  }
+
+  public static async readUpToTime(
+    my_subidentity_encryption_sk: EncryptionStaticKey,
+    my_subidentity_signature_sk: SignatureStaticKey,
+    receiver_public_key: EncryptionPublicKey,
+    inbox: string,
+    upToTime: string,
+    sender_subidentity: string,
+    sender: ProfileName,
+    receiver: ProfileName
+  ): Promise<ShinkaiMessage> {
+    const readUpToTime = { inbox, upToTime };
+  
+    return ShinkaiMessageBuilder.createCustomShinkaiMessageToNode(
+      my_subidentity_encryption_sk,
+      my_subidentity_signature_sk,
+      receiver_public_key,
+      readUpToTime,
+      sender_subidentity,
+      sender,
+      receiver,
+      MessageSchemaType.APIReadUpToTimeRequest
+    );
+  }
+
+  public static async errorMessage(
+    my_encryption_secret_key: EncryptionStaticKey,
+    my_signature_secret_key: SignatureStaticKey,
+    receiver_public_key: EncryptionPublicKey,
+    sender: ProfileName,
+    receiver: ProfileName,
+    error_msg: string
+  ): Promise<ShinkaiMessage> {
+    return new ShinkaiMessageBuilder(
+      my_encryption_secret_key,
+      my_signature_secret_key,
+      receiver_public_key
+    )
+      .set_message_raw_content(`{error: "${error_msg}"}`)
+      .set_empty_encrypted_internal_metadata()
+      .set_external_metadata(receiver, sender)
+      .set_no_body_encryption()
+      .build();
   }
 }

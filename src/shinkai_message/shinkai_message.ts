@@ -1,3 +1,4 @@
+import { sign_outer_layer, verify_outer_layer_signature } from "../cryptography/shinkai_signing";
 import { MessageSchemaType, TSEncryptionMethod } from "../schemas/schema_types";
 import { ExternalMetadata } from "./shinkai_external_metadata";
 import { EncryptedMessageBody, MessageBody } from "./shinkai_message_body";
@@ -28,6 +29,16 @@ export class ShinkaiMessage {
     const message_clone = new ShinkaiMessage(this.body, this.external_metadata, this.encryption, this.version);
     message_clone.body = await this.body.encrypt(self_sk, destination_pk);
     message_clone.encryption = TSEncryptionMethod.DiffieHellmanChaChaPoly1305;
+    return message_clone;
+  }
+
+  async verify_outer_layer_signature(self_pk: Uint8Array): Promise<boolean> {
+    return verify_outer_layer_signature(self_pk, this);
+  };
+
+  async sign_outer_layer(self_sk: Uint8Array): Promise<ShinkaiMessage> {
+    const message_clone = new ShinkaiMessage(this.body, this.external_metadata, this.encryption, this.version);
+    message_clone.external_metadata.signature = (await sign_outer_layer(self_sk, this)).signature;
     return message_clone;
   }
 }
