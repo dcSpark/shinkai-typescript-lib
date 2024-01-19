@@ -4,7 +4,10 @@ import { encryptMessageData } from "../cryptography/shinkai_encryption";
 import { hexToBytes } from "../cryptography/crypto_utils";
 
 export abstract class MessageData {
-  abstract encrypt(senderPrivateKey: Uint8Array, recipientPublicKey: Uint8Array): Promise<EncryptedMessageData>;
+  abstract encrypt(
+    senderPrivateKey: Uint8Array,
+    recipientPublicKey: Uint8Array
+  ): Promise<EncryptedMessageData>;
 }
 
 export class EncryptedMessageData extends MessageData {
@@ -15,8 +18,11 @@ export class EncryptedMessageData extends MessageData {
     this.data = data;
   }
 
-  async encrypt(senderPrivateKey: Uint8Array, recipientPublicKey: Uint8Array): Promise<EncryptedMessageData> {
-    throw new Error('Data is already encrypted');
+  async encrypt(
+    senderPrivateKey: Uint8Array,
+    recipientPublicKey: Uint8Array
+  ): Promise<EncryptedMessageData> {
+    throw new Error("Data is already encrypted");
   }
 }
 
@@ -28,7 +34,10 @@ export class UnencryptedMessageData extends MessageData {
     this.unencrypted = data;
   }
 
-  async encrypt(senderPrivateKey: Uint8Array, recipientPublicKey: Uint8Array): Promise<EncryptedMessageData> {
+  async encrypt(
+    senderPrivateKey: Uint8Array,
+    recipientPublicKey: Uint8Array
+  ): Promise<EncryptedMessageData> {
     // Encrypt the message data
     const encryptedData = await encryptMessageData(
       this.unencrypted,

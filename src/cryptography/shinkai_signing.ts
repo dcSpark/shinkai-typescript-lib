@@ -185,15 +185,9 @@ function sortObjectKeys(obj: any): object {
   Object.keys(obj)
     .sort()
     .forEach((key: string) => {
-      if (
-        key in obj &&
-        typeof obj[key] === "object" &&
-        obj[key] !== null
-      ) {
+      if (key in obj && typeof obj[key] === "object" && obj[key] !== null) {
         sortedObj[key] =
-          obj[key] instanceof Object
-            ? sortObjectKeys(obj[key])
-            : obj[key];
+          obj[key] instanceof Object ? sortObjectKeys(obj[key]) : obj[key];
       } else {
         sortedObj[key] = obj[key];
       }

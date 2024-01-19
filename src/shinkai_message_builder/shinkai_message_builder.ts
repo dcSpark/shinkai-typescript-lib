@@ -517,7 +517,7 @@ export class ShinkaiMessageBuilder {
         sender_subidentity,
         node_receiver_subidentity,
         inbox,
-        TSEncryptionMethod.None,
+        TSEncryptionMethod.None
       )
       .set_message_schema_type(MessageSchemaType.JobMessageSchema)
       .set_body_encryption(TSEncryptionMethod.DiffieHellmanChaChaPoly1305)

@@ -5,7 +5,11 @@ import {
 } from "../cryptography/shinkai_signing";
 import { MessageSchemaType, TSEncryptionMethod } from "../schemas/schema_types";
 import { ExternalMetadata } from "./shinkai_external_metadata";
-import { EncryptedMessageBody, MessageBody, UnencryptedMessageBody } from "./shinkai_message_body";
+import {
+  EncryptedMessageBody,
+  MessageBody,
+  UnencryptedMessageBody,
+} from "./shinkai_message_body";
 import { ShinkaiVersion } from "./shinkai_version";
 
 export class ShinkaiMessage {
