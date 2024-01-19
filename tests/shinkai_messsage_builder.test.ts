@@ -18,13 +18,99 @@ import {
 } from "../src/shinkai_message/shinkai_message_data";
 import {
   ShinkaiMessageBuilder,
-  EncryptionStaticKey,
-  SignatureStaticKey,
-  EncryptionPublicKey,
 } from "../src/shinkai_message_builder/shinkai_message_builder";
-import { ShinkaiData } from "../src/shinkai_message/shinkai_data";
 
 describe("ShinkaiMessageBuilder pre-made methods", () => {
+  it("should create a registration message", async () => {
+    const my_encryption_secret_key = new Uint8Array(
+      Buffer.from(
+        "d890da39e7309ef5ee55a8a694c1889e59062b15b3b7ab2dde46b00e7c19706a",
+        "hex"
+      )
+    );
+    const my_signature_secret_key = new Uint8Array(
+      Buffer.from(
+        "5441da0faafb6c1b0352bd6c41b2e90d4190603b787780d8f2d5d6566fe86e21",
+        "hex"
+      )
+    );
+    const receiver_public_key = new Uint8Array(
+      Buffer.from(
+        "c91c2e5003be179f1e4611cd2557ebc197673e894a0b6964fba52c997d4e612b",
+        "hex"
+      )
+    );
+    const sender = "main";
+    const recipient = "@@localhost.shinkai";
+    const sender_subidentity = "main_device";
+    const scheduled_time = "2024-01-18T22:05:17.185Z";
+    const other = Buffer.from(receiver_public_key).toString("hex");
+    const message_raw_content =
+      '{"code":"","registration_name":"main_device","device_identity_pk":"f08641cc020000aa3d260e9a692f46c4e1589c520a03c5c022668e692e32efeb","device_encryption_pk":"c91c2e5003be179f1e4611cd2557ebc197673e894a0b6964fba52c997d4e612b","profile_identity_pk":"55d89ebd57b7aae47ce235b5761d7b1ba48c3e8823f8d7903f586d4ef36cc3c4","profile_encryption_pk":"4202cb5e8ed6cf909236d3f4a08dd205f5fdf925bfac4dc09f5781fec8965b09","identity_type":"device","permission_type":"admin"}';
+
+    const messageBuilder = new ShinkaiMessageBuilder(
+      my_encryption_secret_key,
+      my_signature_secret_key,
+      receiver_public_key
+    );
+
+    await messageBuilder.init();
+
+    const message = await messageBuilder
+      .set_message_raw_content(message_raw_content)
+      .set_body_encryption(TSEncryptionMethod.None)
+      .set_message_schema_type(MessageSchemaType.TextContent)
+      .set_internal_metadata(sender_subidentity, "", TSEncryptionMethod.None)
+      .set_external_metadata_with_schedule_and_other(
+        recipient,
+        sender,
+        scheduled_time,
+        other
+      )
+      .build();
+
+    const messageCopy = JSON.parse(JSON.stringify(message));
+
+    // console.log("### message: ");
+    // console.log(util.inspect(messageCopy, false, null, true));
+
+    const expectedOutput = {
+      body: {
+        unencrypted: {
+          message_data: {
+            unencrypted: {
+              message_raw_content: message_raw_content,
+              message_content_schema: "TextContent",
+            },
+          },
+          internal_metadata: {
+            sender_subidentity: sender_subidentity,
+            recipient_subidentity: "",
+            inbox:
+              "inbox::@@localhost.shinkai::@@main.shinkai/main_device::false",
+            signature:
+              "fb4d0385f4207ba1881663e75c60e97a70378a141d061707d3168a5aa8481f3ca20e5b0b54fbb68d6603ea15a6aa8197027a7d52f5c33c112bf692fd4b7be603",
+            encryption: "None",
+          },
+        },
+      },
+      external_metadata: {
+        sender: sender,
+        recipient,
+        scheduled_time: scheduled_time,
+        signature:
+          "b167108937196fefc8cc0e3c7cdd526778847d3d601094850c4266bd6384146f96f9984ba1f1fc775dd187fe9b1ede1c8af43f421e88a6bcdf0937f437c4ed09",
+        intra_sender: "",
+        other:
+          "c91c2e5003be179f1e4611cd2557ebc197673e894a0b6964fba52c997d4e612b",
+      },
+      encryption: "None",
+      version: "V1_0",
+    };
+
+    expect(messageCopy).toEqual(expectedOutput);
+  });
+
   it("should create an ACK message", async () => {
     const encryptionKeys = await generateEncryptionKeys();
     const signatureKeys = await generateSignatureKeys();
@@ -52,8 +138,8 @@ describe("ShinkaiMessageBuilder pre-made methods", () => {
     if (message.body instanceof UnencryptedMessageBody) {
       const messageData = message.body.unencrypted
         .message_data as UnencryptedMessageData;
-      if ("message_raw_content" in messageData.data) {
-        expect(messageData.data.message_raw_content).toBe("ACK");
+      if ("message_raw_content" in messageData.unencrypted) {
+        expect(messageData.unencrypted.message_raw_content).toBe("ACK");
       } else {
         throw new Error("Message data is not unencrypted");
       }
@@ -91,8 +177,8 @@ describe("ShinkaiMessageBuilder pre-made methods", () => {
     if (message.body instanceof UnencryptedMessageBody) {
       const messageData = message.body.unencrypted
         .message_data as UnencryptedMessageData;
-      if ("message_raw_content" in messageData.data) {
-        expect(messageData.data.message_raw_content).toBe("terminate");
+      if ("message_raw_content" in messageData.unencrypted) {
+        expect(messageData.unencrypted.message_raw_content).toBe("terminate");
       } else {
         throw new Error("Message data is not unencrypted");
       }
@@ -699,8 +785,10 @@ describe("ShinkaiMessageBuilder general tests", () => {
     if (message.body instanceof UnencryptedMessageBody) {
       const messageData = message.body.unencrypted
         .message_data as UnencryptedMessageData;
-      if ("message_raw_content" in messageData.data) {
-        expect(messageData.data.message_raw_content).toBe("body content");
+      if ("message_raw_content" in messageData.unencrypted) {
+        expect(messageData.unencrypted.message_raw_content).toBe(
+          "body content"
+        );
       } else {
         throw new Error("Message data is not unencrypted");
       }
@@ -763,7 +851,6 @@ describe("ShinkaiMessageBuilder general tests", () => {
 
     expect(message).toBeDefined();
 
-
     if (message.body instanceof EncryptedMessageBody) {
       const decryptedMessage = await message.decrypt_outer_layer(
         my_encryption_secret_key,
@@ -773,8 +860,10 @@ describe("ShinkaiMessageBuilder general tests", () => {
       if (decryptedMessage.body instanceof UnencryptedMessageBody) {
         const messageData = decryptedMessage.body.unencrypted
           .message_data as UnencryptedMessageData;
-        if ("message_raw_content" in messageData.data) {
-          expect(messageData.data.message_raw_content).toBe("body content");
+        if ("message_raw_content" in messageData.unencrypted) {
+          expect(messageData.unencrypted.message_raw_content).toBe(
+            "body content"
+          );
         } else {
           throw new Error("Message data is not unencrypted");
         }
@@ -805,7 +894,7 @@ describe("ShinkaiMessageBuilder general tests", () => {
     const my_identity_sk = await generateSignatureKeys();
     const my_encryption_sk = await generateEncryptionKeys();
     const node2_encryption_pk = await generateEncryptionKeys();
-  
+
     const my_encryption_secret_key = new Uint8Array(
       Buffer.from(my_encryption_sk.my_encryption_sk_string, "hex")
     );
@@ -815,15 +904,15 @@ describe("ShinkaiMessageBuilder general tests", () => {
     const receiver_public_key = new Uint8Array(
       Buffer.from(node2_encryption_pk.my_encryption_pk_string, "hex")
     );
-  
+
     const messageBuilder = new ShinkaiMessageBuilder(
       my_encryption_secret_key,
       my_identity_secret_key,
       receiver_public_key
     );
-  
+
     await messageBuilder.init();
-  
+
     try {
       const message = await messageBuilder.build();
       fail("Message build should have thrown an error due to missing fields");
