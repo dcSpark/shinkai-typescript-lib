@@ -1,20 +1,15 @@
 {
-  "name": "@shinkai_network/shinkai-typescript-lib",
+  "name": "@shinkai_protocol/shinkai-typescript-lib",
   "version": "0.0.1",
   "description": "Typescript library to build and handle Shinkai Messages",
-  "type": "module",
+  "type": "commonjs",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "import": {
-        "types": "./dist/index.d.ts",
-        "default": "./dist/index.js"
-      },
-      "require": {
-        "types": "./dist/index.d.ts",
-        "default": "./dist/index.js"
-      }
+        "import": "./dist/index.js",
+        "require": "./dist/index.js",
+        "types": "./dist/index.d.ts"
     }
   },
   "scripts": {
