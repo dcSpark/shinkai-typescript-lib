@@ -513,10 +513,11 @@ export class ShinkaiMessageBuilder {
       receiver_public_key
     )
       .set_message_raw_content(body)
-      .set_internal_metadata(
+      .set_internal_metadata_with_inbox(
         sender_subidentity,
         node_receiver_subidentity,
-        TSEncryptionMethod.None
+        inbox,
+        TSEncryptionMethod.None,
       )
       .set_message_schema_type(MessageSchemaType.JobMessageSchema)
       .set_body_encryption(TSEncryptionMethod.DiffieHellmanChaChaPoly1305)
