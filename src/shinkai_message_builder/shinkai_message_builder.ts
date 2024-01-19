@@ -265,6 +265,25 @@ export class ShinkaiMessageBuilder {
     return this;
   }
 
+  set_external_metadata_with_schedule_and_other(
+    recipient: ProfileName,
+    sender: ProfileName,
+    scheduled_time: string,
+    other: string
+  ): this {
+    let signature = "";
+    let intra_sender = "";
+    this.external_metadata = {
+      sender,
+      recipient,
+      scheduled_time,
+      signature,
+      other,
+      intra_sender,
+    };
+    return this;
+  }
+
   update_intra_sender(intra_sender: string): this {
     if (this.external_metadata) {
       this.external_metadata.intra_sender = intra_sender;
