@@ -1,0 +1,37 @@
+name: Release development
+
+on:
+  push:
+    branches: [agallardol/publish-npm]
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    environment: development
+    timeout-minutes: 5
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node version
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+          check-latest: false
+          registry-url: https://registry.npmjs.org
+          cache: "npm"
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        run: |
+          npm cache verify
+          npm ci --no-audit --prefer-offline
+
+      - name: Build & Version & Publish NPM
+        env:
+          VERSION: 0.0.1-development.${{github.run_number}}
+          NPM_TOKEN: ${{ secrets.SHINKAI_PROTOCOL_NPM_TOKEN }}
+        run: |
+          npm run build && npm version ${{ env.VERSION }} && npm publish
