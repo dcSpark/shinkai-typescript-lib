@@ -34,4 +34,6 @@ jobs:
           VERSION: 0.0.1-development.${{github.run_number}}
           NPM_TOKEN: ${{ secrets.SHINKAI_PROTOCOL_NPM_TOKEN }}
         run: |
-          npm run build && npm version ${{ env.VERSION }} && npm publish
+          npm run build
+          npm version ${{ env.VERSION }} --git-tag-version=false
+          npm publish
