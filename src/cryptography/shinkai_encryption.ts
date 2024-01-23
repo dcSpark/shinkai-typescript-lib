@@ -127,7 +127,8 @@ export async function encryptMessageData(
   const shared_secret = sharedKey(self_sk, destination_pk);
   const key = blake3(shared_secret);
 
-  const combined_content = data.message_raw_content + data.message_content_schema;
+  const combined_content =
+    data.message_raw_content + data.message_content_schema;
   const combined_content_bytes = new TextEncoder().encode(combined_content);
 
   const content_len_bytes = new Uint8Array(8);

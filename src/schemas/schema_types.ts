@@ -1,4 +1,3 @@
-
 export enum TSEncryptionMethod {
   DiffieHellmanChaChaPoly1305 = "DiffieHellmanChaChaPoly1305",
   None = "None",

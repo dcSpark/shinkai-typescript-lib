@@ -16,9 +16,7 @@ import {
   EncryptedMessageData,
   UnencryptedMessageData,
 } from "../src/shinkai_message/shinkai_message_data";
-import {
-  ShinkaiMessageBuilder,
-} from "../src/shinkai_message_builder/shinkai_message_builder";
+import { ShinkaiMessageBuilder } from "../src/shinkai_message_builder/shinkai_message_builder";
 
 describe("ShinkaiMessageBuilder pre-made methods", () => {
   it("should create a registration message", async () => {
