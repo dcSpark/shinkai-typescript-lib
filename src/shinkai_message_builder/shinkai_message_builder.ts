@@ -284,6 +284,13 @@ export class ShinkaiMessageBuilder {
     return this;
   }
 
+  update_scheduled_time(scheduled_time: string): this {
+    if (this.external_metadata) {
+      this.external_metadata.scheduled_time = scheduled_time;
+    }
+    return this;
+  }
+
   update_intra_sender(intra_sender: string): this {
     if (this.external_metadata) {
       this.external_metadata.intra_sender = intra_sender;
@@ -505,7 +512,6 @@ export class ShinkaiMessageBuilder {
   ): Promise<ShinkaiMessage> {
     const jobMessage = { job_id, content, files_inbox, parent: parent || "" };
     const body = JSON.stringify(jobMessage);
-
     const inbox = InboxName.getJobInboxNameFromParams(job_id).value;
 
     return new ShinkaiMessageBuilder(
