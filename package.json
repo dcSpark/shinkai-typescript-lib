@@ -1,6 +1,6 @@
 {
   "name": "@shinkai_protocol/shinkai-typescript-lib",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Typescript library to build and handle Shinkai Messages",
   "type": "commonjs",
   "main": "./dist/index.js",
@@ -14,7 +14,8 @@
   },
   "scripts": {
     "build": "tsc",
-    "test": "jest"
+    "test": "jest",
+    "bundle-tgz": "rm -rf ./dist && tsc && npm pack"
   },
   "keywords": [],
   "author": "Shinkai",
