@@ -494,6 +494,7 @@ export class ShinkaiMessageBuilder {
     job_id: string,
     content: string,
     files_inbox: string,
+    parent: string | null,
     my_encryption_secret_key: EncryptionStaticKey,
     my_signature_secret_key: SignatureStaticKey,
     receiver_public_key: EncryptionPublicKey,
@@ -502,7 +503,7 @@ export class ShinkaiMessageBuilder {
     node_receiver: ProfileName,
     node_receiver_subidentity: string
   ): Promise<ShinkaiMessage> {
-    const jobMessage = { job_id, content, files_inbox };
+    const jobMessage = { job_id, content, files_inbox, parent: parent || "" };
     const body = JSON.stringify(jobMessage);
 
     const inbox = InboxName.getJobInboxNameFromParams(job_id).value;
@@ -520,7 +521,7 @@ export class ShinkaiMessageBuilder {
         TSEncryptionMethod.None
       )
       .set_message_schema_type(MessageSchemaType.JobMessageSchema)
-      .set_body_encryption(TSEncryptionMethod.DiffieHellmanChaChaPoly1305)
+      .set_body_encryption(TSEncryptionMethod.None)
       .set_external_metadata_with_intra_sender(
         node_receiver,
         node_sender,
