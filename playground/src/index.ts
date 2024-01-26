@@ -8,8 +8,8 @@ import {
 } from "@shinkai_protocol/shinkai-typescript-lib";
 
 async function main() {
-  const encryption_sk: string = "d83f619804a92fdb4057192dc43dd748ea778adc52bc498ce80524c014b81159";
-  const signature_sk: string = "df3f619804a92fdb4057192dc43dd748ea778adc52bc498ce80524c014b81119";
+  const encryption_sk: string = "88b49468ed3ee4ea079f75eef9f651f09d3f18fd3a575c3c48d0052347462179";
+  const signature_sk: string = "91adf9c548e3ea0ba3f3fa38ecd239c3bec0dc5a63dcb430746ec4c43160d97e";
   const receiver_pk =
     "798cbd64d78c4a0fba338b2a6349634940dc4e5b601db1029e02c41e0fe05679";
   const profile_name = "main";
@@ -38,7 +38,7 @@ async function main() {
 
   const message_job = await shinkai_manager.buildJobMessage(
     "hello hello, are u there?",
-    "job_inbox::jobid_399c5571-3504-4aa7-a291-b1e086c1440c::false"
+    "jobid_41e6c976-afdf-40b6-a8e0-a7d19ed5579e"
   );
 
   console.log("### Message job: ");

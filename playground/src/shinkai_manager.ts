@@ -18,9 +18,9 @@ export class ShinkaiManager {
     this.deviceName = deviceName;
   }
 
-  async buildJobMessage(messageContent: string, inbox: string): Promise<any> {
+  async buildJobMessage(messageContent: string, job_id: string): Promise<any> {
     return await ShinkaiMessageBuilder.jobMessage(
-      inbox,
+      job_id,
       messageContent,
       "",
       "",
