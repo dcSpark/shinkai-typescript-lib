@@ -19,6 +19,83 @@ import {
 import { ShinkaiMessageBuilder } from "../src/shinkai_message_builder/shinkai_message_builder";
 
 describe("ShinkaiMessageBuilder pre-made methods", () => {
+  it("should create a get all inboxes for profile request", async () => {
+    const my_encryption_secret_key = new Uint8Array(
+      Buffer.from(
+        "b01a8082dba0a866fa82d8d3e2dea25b053387e2ac06f35a5e237104de2c5374",
+        "hex"
+      )
+    );
+    const my_signature_secret_key = new Uint8Array(
+      Buffer.from(
+        "03b1cd8cdce9a8a54ce73a262f11c3ff17eedf9f696f14e9ab55a89476b22306",
+        "hex"
+      )
+    );
+    const receiver_public_key = new Uint8Array(
+      Buffer.from(
+        "798cbd64d78c4a0fba338b2a6349634940dc4e5b601db1029e02c41e0fe05679",
+        "hex"
+      )
+    );
+    const sender = "@@localhost.shinkai";
+    const recipient = "@@localhost.shinkai";
+    const sender_subidentity = "main";
+
+    const getAllInboxesMessage =
+      await ShinkaiMessageBuilder.getAllInboxesForProfile(
+        my_encryption_secret_key,
+        my_signature_secret_key,
+        receiver_public_key,
+        sender + "/" + sender_subidentity,
+        sender,
+        sender_subidentity,
+        recipient
+      );
+
+    const scheduled_time =
+      getAllInboxesMessage.external_metadata.scheduled_time;
+
+    const messageBuilder = new ShinkaiMessageBuilder(
+      my_encryption_secret_key,
+      my_signature_secret_key,
+      receiver_public_key
+    );
+
+    await messageBuilder.init();
+
+    const message = await messageBuilder
+      .set_message_raw_content(sender + "/" + sender_subidentity)
+      .set_body_encryption(TSEncryptionMethod.DiffieHellmanChaChaPoly1305)
+      .set_message_schema_type(MessageSchemaType.TextContent)
+      .set_internal_metadata_with_inbox(
+        sender_subidentity,
+        "",
+        "",
+        TSEncryptionMethod.None
+      )
+      .set_external_metadata_with_intra_sender(
+        recipient,
+        sender,
+        sender_subidentity
+      )
+      .update_scheduled_time(scheduled_time)
+      .build();
+
+    const messageCopy = JSON.parse(JSON.stringify(message));
+    const getAllInboxesMessageCopy = JSON.parse(
+      JSON.stringify(getAllInboxesMessage)
+    );
+
+    // Ignore the 'content' and 'signature' fields in the comparison
+    delete messageCopy.body.encrypted.content;
+    delete messageCopy.external_metadata.signature;
+    delete getAllInboxesMessageCopy.body.encrypted.content;
+    delete getAllInboxesMessageCopy.external_metadata.signature;
+
+    expect(messageCopy).toEqual(getAllInboxesMessageCopy);
+  });
+
   it("should create a job message that matches a custom creation", async () => {
     const my_encryption_secret_key = new Uint8Array(
       Buffer.from(
@@ -43,7 +120,7 @@ describe("ShinkaiMessageBuilder pre-made methods", () => {
     const sender_subidentity = "main";
     const job_id = "jobid_399c5571-3504-4aa7-a291-b1e086c1440c";
     const inbox = `job_inbox::${job_id}::false`;
-    const text = "hello hello, are u there?"
+    const text = "hello hello, are u there?";
     const message_raw_content = JSON.stringify({
       job_id: job_id,
       content: text,

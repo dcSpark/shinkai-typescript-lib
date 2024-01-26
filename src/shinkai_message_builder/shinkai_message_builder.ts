@@ -828,9 +828,9 @@ export class ShinkaiMessageBuilder {
     my_subidentity_encryption_sk: EncryptionStaticKey,
     my_subidentity_signature_sk: SignatureStaticKey,
     receiver_public_key: EncryptionPublicKey,
-    full_profile: string,
-    sender_subidentity: string,
+    target_node_and_profile: string,
     sender: ProfileName,
+    sender_subidentity: string,
     receiver: ProfileName
   ): Promise<ShinkaiMessage> {
     return new ShinkaiMessageBuilder(
@@ -838,7 +838,7 @@ export class ShinkaiMessageBuilder {
       my_subidentity_signature_sk,
       receiver_public_key
     )
-      .set_message_raw_content(full_profile)
+      .set_message_raw_content(target_node_and_profile)
       .set_internal_metadata_with_schema(
         sender_subidentity,
         "",

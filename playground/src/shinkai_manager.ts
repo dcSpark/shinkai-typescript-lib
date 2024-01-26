@@ -34,6 +34,19 @@ export class ShinkaiManager {
     )
   }
 
+  async buildGetInboxes(): Promise<any> {
+    return await ShinkaiMessageBuilder.getAllInboxesForProfile(
+      this.encryptionSecretKey,
+      this.signatureSecretKey,
+      this.receiverPublicKey,
+      this.shinkaiName,
+      this.profileName,
+      this.shinkaiName,
+      ""
+    );
+  }
+
+
   async buildGetMessagesForInbox(inbox: string): Promise<any> {
     const messageBuilder = new ShinkaiMessageBuilder(
       this.encryptionSecretKey,
@@ -42,8 +55,6 @@ export class ShinkaiManager {
     );
 
     await messageBuilder.init();
-    const currentDate = new Date().toISOString();
-
     return messageBuilder
       .set_message_raw_content(JSON.stringify({ inbox: inbox, count: 10, offset: null }))
       .set_body_encryption(TSEncryptionMethod.None)
@@ -55,25 +66,25 @@ export class ShinkaiManager {
       .build();
   }
 
-  async buildMessage(messageContent: string): Promise<any> {
-    const messageBuilder = new ShinkaiMessageBuilder(
-      this.encryptionSecretKey,
-      this.signatureSecretKey,
-      this.receiverPublicKey
-    );
+  // async buildMessage(messageContent: string): Promise<any> {
+  //   const messageBuilder = new ShinkaiMessageBuilder(
+  //     this.encryptionSecretKey,
+  //     this.signatureSecretKey,
+  //     this.receiverPublicKey
+  //   );
 
-    await messageBuilder.init();
+  //   await messageBuilder.init();
 
-    const currentDate = new Date().toISOString();
+  //   const currentDate = new Date().toISOString();
 
-    return messageBuilder
-      .set_message_raw_content(messageContent)
-      .set_body_encryption(TSEncryptionMethod.None)
-      .set_message_schema_type(MessageSchemaType.TextContent)
-      .set_internal_metadata(this.deviceName, "", TSEncryptionMethod.None)
-      .set_external_metadata_with_schedule_and_other(
-        this.shinkaiName, this.profileName, currentDate, Buffer.from(this.receiverPublicKey).toString("hex")
-      )
-      .build();
-  }
+  //   return messageBuilder
+  //     .set_message_raw_content(messageContent)
+  //     .set_body_encryption(TSEncryptionMethod.None)
+  //     .set_message_schema_type(MessageSchemaType.TextContent)
+  //     .set_internal_metadata(this.deviceName, "", TSEncryptionMethod.None)
+  //     .set_external_metadata_with_schedule_and_other(
+  //       this.shinkaiName, this.profileName, currentDate, Buffer.from(this.receiverPublicKey).toString("hex")
+  //     )
+  //     .build();
+  // }
 }
