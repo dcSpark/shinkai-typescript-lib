@@ -1,4 +1,9 @@
-import { MessageSchemaType, ShinkaiMessage, ShinkaiMessageBuilder, TSEncryptionMethod } from "@shinkai_protocol/shinkai-typescript-lib";
+import {
+  MessageSchemaType,
+  ShinkaiMessage,
+  ShinkaiMessageBuilder,
+  TSEncryptionMethod,
+} from "@shinkai_protocol/shinkai-typescript-lib";
 import { postData } from "./utils";
 
 export class ShinkaiManager {
@@ -9,7 +14,14 @@ export class ShinkaiManager {
   private profileName: string;
   private deviceName: string;
 
-  constructor(encryptionSK: string, signatureSK: string, receiverPK: string, shinkaiName: string, profileName: string, deviceName: string) {
+  constructor(
+    encryptionSK: string,
+    signatureSK: string,
+    receiverPK: string,
+    shinkaiName: string,
+    profileName: string,
+    deviceName: string
+  ) {
     this.encryptionSecretKey = new Uint8Array(Buffer.from(encryptionSK, "hex"));
     this.signatureSecretKey = new Uint8Array(Buffer.from(signatureSK, "hex"));
     this.receiverPublicKey = new Uint8Array(Buffer.from(receiverPK, "hex"));
@@ -31,21 +43,48 @@ export class ShinkaiManager {
       this.profileName,
       this.shinkaiName,
       ""
-    )
+    );
   }
 
   async buildGetInboxes(): Promise<any> {
+    // Option A
+    // const messageBuilder = new ShinkaiMessageBuilder(
+    //   this.encryptionSecretKey,
+    //   this.signatureSecretKey,
+    //   this.receiverPublicKey
+    // );
+
+    // await messageBuilder.init();
+
+    // const message = await messageBuilder
+    //   .set_message_raw_content(this.shinkaiName + "/" + this.profileName)
+    //   .set_body_encryption(TSEncryptionMethod.DiffieHellmanChaChaPoly1305)
+    //   .set_message_schema_type(MessageSchemaType.TextContent)
+    //   .set_internal_metadata_with_inbox(
+    //     this.profileName,
+    //     "",
+    //     "",
+    //     TSEncryptionMethod.None
+    //   )
+    //   .set_external_metadata_with_intra_sender(
+    //     this.shinkaiName,
+    //     this.shinkaiName,
+    //     this.profileName
+    //   )
+    //   .build();
+
+    // return message;
+    // Option B
     return await ShinkaiMessageBuilder.getAllInboxesForProfile(
       this.encryptionSecretKey,
       this.signatureSecretKey,
       this.receiverPublicKey,
+      this.shinkaiName + '/' + this.profileName,
       this.shinkaiName,
       this.profileName,
       this.shinkaiName,
-      ""
     );
   }
-
 
   async buildGetMessagesForInbox(inbox: string): Promise<any> {
     const messageBuilder = new ShinkaiMessageBuilder(
@@ -56,12 +95,21 @@ export class ShinkaiManager {
 
     await messageBuilder.init();
     return messageBuilder
-      .set_message_raw_content(JSON.stringify({ inbox: inbox, count: 10, offset: null }))
+      .set_message_raw_content(
+        JSON.stringify({ inbox: inbox, count: 10, offset: null })
+      )
       .set_body_encryption(TSEncryptionMethod.None)
       .set_message_schema_type(MessageSchemaType.APIGetMessagesFromInboxRequest)
-      .set_internal_metadata_with_inbox(this.profileName, "", inbox, TSEncryptionMethod.None)
+      .set_internal_metadata_with_inbox(
+        this.profileName,
+        "",
+        inbox,
+        TSEncryptionMethod.None
+      )
       .set_external_metadata_with_intra_sender(
-        this.shinkaiName, this.shinkaiName, this.profileName
+        this.shinkaiName,
+        this.shinkaiName,
+        this.profileName
       )
       .build();
   }

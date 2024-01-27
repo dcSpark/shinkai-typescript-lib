@@ -25,10 +25,11 @@ async function getMessages(shinkai_manager: ShinkaiManager, inbox: string) {
 async function getInboxes(shinkai_manager: ShinkaiManager) {
   const message = await shinkai_manager.buildGetInboxes();
   let resp = await postData(message, "/v1/get_all_smart_inboxes_for_profile");
-  console.log(message);
+  console.log(resp);
 }
 
 async function main() {
+  // Shinkai Node1
   const encryption_sk: string = "88b49468ed3ee4ea079f75eef9f651f09d3f18fd3a575c3c48d0052347462179";
   const signature_sk: string = "91adf9c548e3ea0ba3f3fa38ecd239c3bec0dc5a63dcb430746ec4c43160d97e";
   const receiver_pk =
