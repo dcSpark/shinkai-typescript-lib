@@ -125,6 +125,117 @@ describe("Cryptography Functions", () => {
     });
   });
 
+  test("encrypt provided unencrypted body message", async () => {
+    // Note: This is a real unencrypted message for the Shinkai Node
+    const unencryptedMessage = {
+      message_data: {
+        unencrypted: {
+          message_content_schema: "TextContent",
+          message_raw_content: "Test data",
+        },
+      },
+      internal_metadata: {
+        sender_subidentity: "",
+        recipient_subidentity: "",
+        inbox:
+          "inbox::@@receiver_node.shinkai::@@receiver_node.shinkai/sender_profile::false",
+        signature:
+          "529fb1301b03d7813c32106c6739bb0366c3fd1a3b2a41f96f2f7a598a1d5deb9a8446b42168816a6409fbc49b474438d31a91d516e2151721d1ef0ab8363506",
+        encryption: "None",
+      },
+    };
+    const myEncryptionSecretKey =
+      "88b49468ed3ee4ea079f75eef9f651f09d3f18fd3a575c3c48d0052347462179";
+    const receiverPublicKey =
+      "60045bdb15c24b161625cf05558078208698272bfe113f792ea740dbd79f4708";
+
+    // Convert keys from HexString to Uint8Array
+    const myPrivateKey = hexToBytes(myEncryptionSecretKey);
+    const recipientPublicKey = hexToBytes(receiverPublicKey);
+
+    // Encrypt the message
+    const encryptedMessage = await encryptMessageBody(
+      JSON.stringify(unencryptedMessage),
+      myPrivateKey,
+      recipientPublicKey
+    );
+
+    // Decrypt the message
+    const decryptedMessage = await decryptMessageBody(
+      encryptedMessage,
+      myPrivateKey,
+      recipientPublicKey
+    );
+
+    // Convert the decrypted message back into a JSON string
+    const decryptedMessageString = JSON.stringify(decryptedMessage);
+
+    // The decrypted message should be the same as the original message
+    expect(decryptedMessageString).toBe(JSON.stringify(unencryptedMessage));
+  });
+
+  test("decrypt provided encrypted body message (from rust node) with new data", async () => {
+    const encryptedMessageJson =
+      '{"body":{"encrypted":{"content":"encrypted:363800751c1ae2888de964fa8319060b6bc508257cad6898d1ab0d420aaf029af4bfb090cf87293cb8a99dbe8d835d9543ed57ec88a55b7db24748bc3c0c78ee093d1166e867df5f7b507c497fb198627cf6b6a2cff89c061c4996108bace53eb2ffc4d69781168c5cc068aaa286b5a09e1758c140ef5bc10be1d858ba3fc1139a002cab00c0da007000c220d811bb4daf3cb7b7b6f14f51c15906316229d634f2399d66d615297b52478ca79c45dbe2a669e5e76dee7f7ddf0a9a9b5b96169bbc5c29465f0f51b2502b84dcafd3597484396a584724ae00d15be3f018943ef233fca6580abf493aeb068f2fe1b61f914000b07ca5aa5f09acb28cf6ca7cd0d0dd5b0398249efb4c7fca362c910f5a9408934ceecbfb95e93251fc2b4ffc48e0557b32813bd740e2a8a6bd81f37fea63cae4696eb707ec3916d3b2046f2a2f6ae0315e443b5abebd709afb4c50f0c9272cc495e243893ed6c7cc7868c93c70b0aedb3a947e08849750df87fd0539ac0b62f1068fe491c6eab616bcc36171c53fb9b213c75100a056bb597998d06ad3716dce5e2688a3d9925ae3ab0351187de4f449390aa504ef9ef31d4e891108a9a443cfdd83d6b8c4b594aa327638198d89ba7b299c2c2f780da01bc9ba"}},"external_metadata":{"sender":"@@localhost.shinkai","recipient":"@@localhost.shinkai","scheduled_time":"2024-01-27T03:54:51.440Z","signature":"0bbaec99d5fcbdf2c669db7cd9eac55b1eb84121065779fe85469dcf7e0eec2b0094d8f8a63288a38f1cc29fc9f189e9a1e0b5f69c62ab710a27cb2aaeabfe0a","intra_sender":"main","other":""},"encryption":"DiffieHellmanChaChaPoly1305","version":"V1_0"}';
+    const myEncryptionSecretKey =
+      "88b49468ed3ee4ea079f75eef9f651f09d3f18fd3a575c3c48d0052347462179";
+    const senderPublicKey =
+      "60045bdb15c24b161625cf05558078208698272bfe113f792ea740dbd79f4708";
+
+    // Convert keys from HexString to Uint8Array
+    const myPrivateKey = hexToBytes(myEncryptionSecretKey);
+    const senderPubKey = hexToBytes(senderPublicKey);
+
+    // Parse the encrypted message JSON
+    const encryptedMessageObject = JSON.parse(encryptedMessageJson);
+
+    // Extract the encrypted content
+    const encryptedContent = encryptedMessageObject.body.encrypted.content;
+
+    // Decrypt the message
+    const decryptedMessage = await decryptMessageBody(
+      encryptedContent,
+      myPrivateKey,
+      senderPubKey
+    );
+    expect(typeof decryptedMessage).toBe("object");
+  });
+
+  test("encrypt provided unencrypted message data", async () => {
+    // Note: This is a real unencrypted message data for the Shinkai Node
+    const unencryptedMessageData = {
+      message_raw_content: "Test data",
+      message_content_schema: "TextContent" as MessageSchemaType,
+    };
+    const myEncryptionSecretKey =
+      "88b49468ed3ee4ea079f75eef9f651f09d3f18fd3a575c3c48d0052347462179";
+    const receiverPublicKey =
+      "60045bdb15c24b161625cf05558078208698272bfe113f792ea740dbd79f4708";
+
+    // Convert keys from HexString to Uint8Array
+    const myPrivateKey = hexToBytes(myEncryptionSecretKey);
+    const recipientPublicKey = hexToBytes(receiverPublicKey);
+
+    // Encrypt the message data
+    const encryptedMessageData = await encryptMessageData(
+      unencryptedMessageData,
+      myPrivateKey,
+      recipientPublicKey
+    );
+
+    console.log("Encrypted message data:", encryptedMessageData);
+
+    // Decrypt the message data
+    const decryptedMessageData = await decryptMessageData(
+      encryptedMessageData,
+      myPrivateKey,
+      recipientPublicKey
+    );
+
+    // The decrypted message data should be the same as the original message data
+    expect(decryptedMessageData).toEqual(unencryptedMessageData);
+  });
+
   test("decrypt provided encrypted data message", async () => {
     // Note: This is a real encrypted message from the Shinkai Node
     const encryptedMessage =

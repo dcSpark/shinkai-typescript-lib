@@ -22,19 +22,19 @@ describe("ShinkaiMessageBuilder pre-made methods", () => {
   it("should create a get all inboxes for profile request", async () => {
     const my_encryption_secret_key = new Uint8Array(
       Buffer.from(
-        "b01a8082dba0a866fa82d8d3e2dea25b053387e2ac06f35a5e237104de2c5374",
+        "88b49468ed3ee4ea079f75eef9f651f09d3f18fd3a575c3c48d0052347462179",
         "hex"
       )
     );
     const my_signature_secret_key = new Uint8Array(
       Buffer.from(
-        "03b1cd8cdce9a8a54ce73a262f11c3ff17eedf9f696f14e9ab55a89476b22306",
+        "91adf9c548e3ea0ba3f3fa38ecd239c3bec0dc5a63dcb430746ec4c43160d97e",
         "hex"
       )
     );
     const receiver_public_key = new Uint8Array(
       Buffer.from(
-        "798cbd64d78c4a0fba338b2a6349634940dc4e5b601db1029e02c41e0fe05679",
+        "60045bdb15c24b161625cf05558078208698272bfe113f792ea740dbd79f4708",
         "hex"
       )
     );
@@ -808,8 +808,8 @@ describe("ShinkaiMessageBuilder pre-made methods", () => {
       my_subidentity_signature_sk,
       receiver_public_key,
       full_profile,
-      sender_subidentity,
       sender,
+      sender_subidentity,
       receiver
     );
 
