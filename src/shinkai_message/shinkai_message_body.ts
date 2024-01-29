@@ -40,7 +40,7 @@ export class UnencryptedMessageBody extends MessageBody {
     destination_pk: Uint8Array
   ): Promise<EncryptedMessageBody> {
     let encryptedBody = await encryptMessageBody(
-      JSON.stringify(this),
+      JSON.stringify(this.unencrypted),
       self_sk,
       destination_pk
     );

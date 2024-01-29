@@ -33,7 +33,7 @@ export async function verify_outer_layer_signature(
     let messageCopy = JSON.parse(JSON.stringify(shinkaiMessage));
     messageCopy.external_metadata.signature = "";
 
-    const sortedShinkaiMessage = sortObjectKeys(shinkaiMessage);
+    const sortedShinkaiMessage = sortObjectKeys(messageCopy);
     // Calculate the hash of the modified message
     const messageHash = blake3FromObj(sortedShinkaiMessage);
     const messageHashMatched = messageHash.match(/.{1,2}/g);
@@ -63,7 +63,7 @@ export async function sign_outer_layer(
     let messageCopy = JSON.parse(JSON.stringify(shinkaiMessage));
     messageCopy.external_metadata.signature = "";
 
-    const sortedShinkaiMessage = sortObjectKeys(shinkaiMessage);
+    const sortedShinkaiMessage = sortObjectKeys(messageCopy);
     const messageHash = blake3FromObj(sortedShinkaiMessage);
     const messageHashMatched = messageHash.match(/.{1,2}/g);
     if (!messageHashMatched) {
@@ -163,7 +163,7 @@ export async function verify_inner_layer_signature(
 }
 
 function blake3FromObj(obj: any): string {
-  let sortedString = JSON.stringify(obj);
+  let sortedString = typeof obj === 'string' ? obj : JSON.stringify(obj);
   let hashAlt = blake3(sortedString);
   let hashAltHex = Array.from(new Uint8Array(hashAlt))
     .map((b) => b.toString(16).padStart(2, "0"))
