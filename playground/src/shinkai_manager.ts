@@ -1,4 +1,5 @@
 import {
+  JobScope,
   MessageSchemaType,
   ShinkaiMessage,
   ShinkaiMessageBuilder,
@@ -43,6 +44,24 @@ export class ShinkaiManager {
       this.profileName,
       this.shinkaiName,
       ""
+    );
+  }
+
+  async buildCreateJob(agent: string): Promise<any> {
+    const job_scope: JobScope = {
+      local: [],
+      database: [],
+    };
+    
+    return await ShinkaiMessageBuilder.jobCreation(
+      job_scope,
+      this.encryptionSecretKey,
+      this.signatureSecretKey,
+      this.receiverPublicKey,
+      this.shinkaiName,
+      this.profileName,
+      this.shinkaiName,
+      agent
     );
   }
 

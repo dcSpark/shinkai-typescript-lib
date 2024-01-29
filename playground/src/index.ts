@@ -16,10 +16,32 @@ async function sendMessage(shinkai_manager: ShinkaiManager, content: string, job
   let resp = await postData(message_job, "/v1/job_message");
   console.log("### Response:");
   console.log(resp);
+
+  if (resp.status === 'success') {
+    return resp.data;
+  } else {
+    throw new Error(`Job creation failed with status: ${resp.status}`);
+  }
 }
 
 async function getMessages(shinkai_manager: ShinkaiManager, inbox: string) {
 
+}
+
+async function createJob(shinkai_manager: ShinkaiManager, agent: string) {
+  const message_job = await shinkai_manager.buildCreateJob(agent);
+  console.log("### Message:");
+  console.log(message_job);
+
+  let resp = await postData(message_job, "/v1/create_job");
+  console.log("### Response:");
+  console.log(resp);
+
+  if (resp.status === 'success') {
+    return resp.data;
+  } else {
+    throw new Error(`Job creation failed with status: ${resp.status}`);
+  }
 }
 
 async function getInboxes(shinkai_manager: ShinkaiManager) {
@@ -47,7 +69,14 @@ async function main() {
     device_name
   );
 
-  await getInboxes(shinkai_manager);
+  let job_id = await createJob(shinkai_manager, "main/agent/my_gpt");
+  console.log("### Job ID:", job_id);
+
+  let answer = await sendMessage(shinkai_manager, "Hello World! how are you?", job_id);
+  console.log("### Answer:", answer);
+
+
+  // await getInboxes(shinkai_manager);
   // console.log(resp);
 }
 
