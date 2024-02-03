@@ -162,7 +162,7 @@ export async function verify_inner_layer_signature(
   }
 }
 
-function blake3FromObj(obj: any): string {
+export function blake3FromObj(obj: any): string {
   let sortedString = typeof obj === 'string' ? obj : JSON.stringify(obj);
   let hashAlt = blake3(sortedString);
   let hashAltHex = Array.from(new Uint8Array(hashAlt))
