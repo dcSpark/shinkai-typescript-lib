@@ -19,7 +19,7 @@ export enum MessageSchemaType {
 
 export interface JobScope {
   local: string[];
-  database: string[];
+  vector_fs: string[];
 }
 
 export interface JobCreation {
