@@ -50,7 +50,7 @@ export class ShinkaiManager {
   async buildCreateJob(agent: string): Promise<any> {
     const job_scope: JobScope = {
       local: [],
-      database: [],
+      vector_fs: [],
     };
     
     return await ShinkaiMessageBuilder.jobCreation(
