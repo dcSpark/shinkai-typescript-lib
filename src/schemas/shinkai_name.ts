@@ -21,7 +21,7 @@ export class ShinkaiName {
   subidentityName: string | null;
 
   constructor(rawName: string) {
-    const correctedName = ShinkaiName.correctNodeName(rawName);
+    const correctedName = ShinkaiName.correctNodeName(rawName).toLowerCase();
 
     const parts = correctedName.split("/");
     this.nodeName = parts[0];
@@ -29,9 +29,7 @@ export class ShinkaiName {
     this.subidentityType = parts.length > 2 ? parts[2] : null;
     this.subidentityName = parts.length > 3 ? parts[3] : null;
 
-    this.fullName = correctedName.toLowerCase();
-    if (this.nodeName) this.nodeName = this.nodeName.toLowerCase();
-    if (this.profileName) this.profileName = this.profileName.toLowerCase();
+    this.fullName = correctedName;
   }
 
   static isFullyValid(shinkaiName: string): boolean {
@@ -303,7 +301,7 @@ export class ShinkaiName {
   }
 
   hasNoSubidentities(): boolean {
-    return this.profileName === undefined && this.subidentityType === undefined;
+    return this.profileName == null && this.subidentityType == null;
   }
 
   getProfileName(): string | null {
@@ -335,18 +333,21 @@ export class ShinkaiName {
   }
 
   static correctNodeName(rawName: string): string {
-    let parts = rawName.split("/", 2);
-    let nodeName = parts[0];
+    // Split without limiting the parts, to include all sections of the name
+    let parts = rawName.toLowerCase().split("/");
 
+    // Correct the node name part
+    let nodeName = parts[0];
     if (!nodeName.startsWith("@@")) {
       nodeName = "@@" + nodeName;
     }
-
     if (!nodeName.endsWith(".shinkai")) {
       nodeName = nodeName + ".shinkai";
     }
+    parts[0] = nodeName; // Update the node name part with corrections
 
-    let correctedName = parts.length > 1 ? nodeName + "/" + parts[1] : nodeName;
+    // Reconstruct the corrected name including all parts
+    let correctedName = parts.join("/");
 
     return correctedName;
   }
