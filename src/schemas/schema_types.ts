@@ -1,3 +1,5 @@
+import { ShinkaiMessage } from "../shinkai_message/shinkai_message";
+
 export enum TSEncryptionMethod {
   DiffieHellmanChaChaPoly1305 = "DiffieHellmanChaChaPoly1305",
   None = "None",
@@ -15,6 +17,17 @@ export enum MessageSchemaType {
   TextContent = "TextContent",
   SymmetricKeyExchange = "SymmetricKeyExchange",
   Empty = "Empty",
+  VecFsRetrievePathSimplifiedJson = "VecFsRetrievePathSimplifiedJson",
+  VecFsRetrieveVectorResource = "VecFsRetrieveVectorResource",
+  VecFsRetrieveVectorSearchSimplifiedJson = "VecFsRetrieveVectorSearchSimplifiedJson",
+  VecFsCreateFolder = "VecFsCreateFolder",
+  VecFsDeleteFolder = "VecFsDeleteFolder",
+  VecFsMoveFolder = "VecFsMoveFolder",
+  VecFsCopyFolder = "VecFsCopyFolder",
+  VecFsCreateItem = "VecFsCreateItem",
+  VecFsMoveItem = "VecFsMoveItem",
+  VecFsCopyItem = "VecFsCopyItem",
+  ConvertFilesAndSaveToFolder = "ConvertFilesAndSaveToFolder",
 }
 
 export interface JobScope {
@@ -72,15 +85,31 @@ export interface SerializedAgent {
 }
 export interface AgentAPIModel {
   OpenAI?: OpenAI;
-  SleepAPI?: SleepAPI;
+  GenericAPI?: GenericAPI;
+  Ollama?: Ollama;
+  ShinkaiBackend?: ShinkaiBackend;
+  LocalLLM?: LocalLLM;
 }
 
 export interface OpenAI {
   model_type: string;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-empty-interface
-export interface SleepAPI {}
+export interface GenericAPI {
+  model_type: string;
+}
+
+export interface Ollama {
+  model_type: string;
+}
+
+export interface ShinkaiBackend {
+  model_type: string;
+}
+
+export interface LocalLLM {
+  model_type: string;
+}
 
 export interface APIAddAgentRequest {
   agent: SerializedAgent;
@@ -92,4 +121,81 @@ export interface RegistrationCode {
   identityPk: string;
   encryptionPk: string;
   permissionType: string;
+}
+
+export interface APIVecFsRetrievePathSimplifiedJson {
+  path: string;
+}
+
+export interface APIConvertFilesAndSaveToFolder {
+  path: string;
+  file_inbox: string;
+}
+
+export interface APIVecFSRetrieveVectorResource {
+  path: string;
+}
+
+export interface APIVecFsRetrieveVectorSearchSimplifiedJson {
+  search: string;
+  path?: string;
+  max_results?: number;
+  max_files_to_scan?: number;
+}
+
+export interface APIVecFsCreateFolder {
+  path: string;
+  folder_name: string;
+}
+
+export interface APIVecFsDeleteFolder {
+  path: string;
+  folder_name: string;
+}
+
+export interface APIVecFsMoveFolder {
+  origin_path: string;
+  destination_path: string;
+}
+
+export interface APIVecFsCopyFolder {
+  origin_path: string;
+  destination_path: string;
+}
+
+export interface APIVecFsCreateItem {
+  path: string;
+  item_name: string;
+  item_content: string;
+}
+
+export interface APIVecFsMoveItem {
+  origin_path: string;
+  destination_path: string;
+}
+
+export interface APIVecFsCopyItem {
+  origin_path: string;
+  destination_path: string;
+}
+
+export interface TopicSubscription {
+  topic: WSTopic;
+  subtopic?: string;
+}
+
+export interface WSMessage {
+  subscriptions: TopicSubscription[];
+  unsubscriptions: TopicSubscription[];
+  shared_key?: string;
+}
+
+export interface WSMessageResponse {
+  subscriptions: TopicSubscription[];
+  shinkai_message: ShinkaiMessage;
+}
+
+export enum WSTopic {
+  Inbox = "inbox",
+  SmartInboxes = "smart_inboxes",
 }
