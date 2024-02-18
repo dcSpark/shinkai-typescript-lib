@@ -444,7 +444,7 @@ export class ShinkaiMessageBuilder {
     }
   }
 
-  public static ackMessage(
+  public static async ackMessage(
     my_encryption_secret_key: EncryptionStaticKey,
     my_signature_secret_key: SignatureStaticKey,
     receiver_public_key: EncryptionPublicKey,
@@ -978,5 +978,220 @@ export class ShinkaiMessageBuilder {
       .set_external_metadata(receiver, sender)
       .set_no_body_encryption()
       .build();
+  }
+
+  public static async createFolder(
+    my_encryption_secret_key: EncryptionStaticKey,
+    my_signature_secret_key: SignatureStaticKey,
+    receiver_public_key: EncryptionPublicKey,
+    folder_name: string,
+    path: string,
+    sender: ProfileName,
+    sender_subidentity: string,
+    receiver: ProfileName,
+    receiver_subidentity: string
+  ): Promise<ShinkaiMessage> {
+    const folderCreationInfo = { folder_name, path };
+    return ShinkaiMessageBuilder.createCustomShinkaiMessageToNode(
+      my_encryption_secret_key,
+      my_signature_secret_key,
+      receiver_public_key,
+      folderCreationInfo,
+      sender_subidentity,
+      sender,
+      receiver,
+      MessageSchemaType.VecFsCreateFolder
+    );
+  }
+
+  public static async moveFolder(
+    my_encryption_secret_key: EncryptionStaticKey,
+    my_signature_secret_key: SignatureStaticKey,
+    receiver_public_key: EncryptionPublicKey,
+    origin_path: string,
+    destination_path: string,
+    sender: ProfileName,
+    sender_subidentity: string,
+    receiver: ProfileName,
+    receiver_subidentity: string
+  ): Promise<ShinkaiMessage> {
+    const folderMoveInfo = { origin_path, destination_path };
+    return ShinkaiMessageBuilder.createCustomShinkaiMessageToNode(
+      my_encryption_secret_key,
+      my_signature_secret_key,
+      receiver_public_key,
+      folderMoveInfo,
+      sender_subidentity,
+      sender,
+      receiver,
+      MessageSchemaType.VecFsMoveFolder
+    );
+  }
+  public static async copyFolder(
+    my_encryption_secret_key: EncryptionStaticKey,
+    my_signature_secret_key: SignatureStaticKey,
+    receiver_public_key: EncryptionPublicKey,
+    origin_path: string,
+    destination_path: string,
+    sender: ProfileName,
+    sender_subidentity: string,
+    receiver: ProfileName,
+    receiver_subidentity: string
+  ): Promise<ShinkaiMessage> {
+    const folderCopyInfo = { origin_path, destination_path };
+    return ShinkaiMessageBuilder.createCustomShinkaiMessageToNode(
+      my_encryption_secret_key,
+      my_signature_secret_key,
+      receiver_public_key,
+      folderCopyInfo,
+      sender_subidentity,
+      sender,
+      receiver,
+      MessageSchemaType.VecFsCopyFolder
+    );
+  }
+
+  public static async moveItem(
+    my_encryption_secret_key: EncryptionStaticKey,
+    my_signature_secret_key: SignatureStaticKey,
+    receiver_public_key: EncryptionPublicKey,
+    origin_path: string,
+    destination_path: string,
+    sender: ProfileName,
+    sender_subidentity: string,
+    receiver: ProfileName,
+    receiver_subidentity: string
+  ): Promise<ShinkaiMessage> {
+    const itemMoveInfo = { origin_path, destination_path };
+    return ShinkaiMessageBuilder.createCustomShinkaiMessageToNode(
+      my_encryption_secret_key,
+      my_signature_secret_key,
+      receiver_public_key,
+      itemMoveInfo,
+      sender_subidentity,
+      sender,
+      receiver,
+      MessageSchemaType.VecFsMoveItem
+    );
+  }
+
+  public static async copyItem(
+    my_encryption_secret_key: EncryptionStaticKey,
+    my_signature_secret_key: SignatureStaticKey,
+    receiver_public_key: EncryptionPublicKey,
+    origin_path: string,
+    destination_path: string,
+    sender: ProfileName,
+    sender_subidentity: string,
+    receiver: ProfileName,
+    receiver_subidentity: string
+  ): Promise<ShinkaiMessage> {
+    const itemCopyInfo = { origin_path, destination_path };
+    return ShinkaiMessageBuilder.createCustomShinkaiMessageToNode(
+      my_encryption_secret_key,
+      my_signature_secret_key,
+      receiver_public_key,
+      itemCopyInfo,
+      sender_subidentity,
+      sender,
+      receiver,
+      MessageSchemaType.VecFsCopyItem
+    );
+  }
+
+  public static async createItems(
+    my_encryption_secret_key: EncryptionStaticKey,
+    my_signature_secret_key: SignatureStaticKey,
+    receiver_public_key: EncryptionPublicKey,
+    destination_path: string,
+    file_inbox: string,
+    sender: ProfileName,
+    sender_subidentity: string,
+    receiver: ProfileName,
+    receiver_subidentity: string
+  ): Promise<ShinkaiMessage> {
+    const createItemsInfo = { destination_path, file_inbox };
+    return ShinkaiMessageBuilder.createCustomShinkaiMessageToNode(
+      my_encryption_secret_key,
+      my_signature_secret_key,
+      receiver_public_key,
+      createItemsInfo,
+      sender_subidentity,
+      sender,
+      receiver,
+      MessageSchemaType.ConvertFilesAndSaveToFolder
+    );
+  }
+
+  public static async retrieveResource(
+    my_encryption_secret_key: EncryptionStaticKey,
+    my_signature_secret_key: SignatureStaticKey,
+    receiver_public_key: EncryptionPublicKey,
+    path: string,
+    sender: ProfileName,
+    sender_subidentity: string,
+    receiver: ProfileName,
+    receiver_subidentity: string
+  ): Promise<ShinkaiMessage> {
+    const retrieveResourceInfo = { path };
+    return ShinkaiMessageBuilder.createCustomShinkaiMessageToNode(
+      my_encryption_secret_key,
+      my_signature_secret_key,
+      receiver_public_key,
+      retrieveResourceInfo,
+      sender_subidentity,
+      sender,
+      receiver,
+      MessageSchemaType.VecFsRetrieveVectorResource
+    );
+  }
+
+  public static async retrievePathSimplified(
+    my_encryption_secret_key: EncryptionStaticKey,
+    my_signature_secret_key: SignatureStaticKey,
+    receiver_public_key: EncryptionPublicKey,
+    path: string,
+    sender: ProfileName,
+    sender_subidentity: string,
+    receiver: ProfileName,
+    receiver_subidentity: string
+  ): Promise<ShinkaiMessage> {
+    const retrievePathInfo = { path };
+    return ShinkaiMessageBuilder.createCustomShinkaiMessageToNode(
+      my_encryption_secret_key,
+      my_signature_secret_key,
+      receiver_public_key,
+      retrievePathInfo,
+      sender_subidentity,
+      sender,
+      receiver,
+      MessageSchemaType.VecFsRetrievePathSimplifiedJson
+    );
+  }
+
+  public static async retrieveVectorSearchSimplified(
+    my_encryption_secret_key: EncryptionStaticKey,
+    my_signature_secret_key: SignatureStaticKey,
+    receiver_public_key: EncryptionPublicKey,
+    search: string,
+    path: string | null,
+    max_results: number | null,
+    max_files_to_scan: number | null,
+    sender: ProfileName,
+    sender_subidentity: string,
+    receiver: ProfileName,
+    receiver_subidentity: string
+  ): Promise<ShinkaiMessage> {
+    const searchInfo = { search, path, max_results, max_files_to_scan };
+    return ShinkaiMessageBuilder.createCustomShinkaiMessageToNode(
+      my_encryption_secret_key,
+      my_signature_secret_key,
+      receiver_public_key,
+      searchInfo,
+      sender_subidentity,
+      sender,
+      receiver,
+      MessageSchemaType.VecFsRetrieveVectorSearchSimplifiedJson
+    );
   }
 }
