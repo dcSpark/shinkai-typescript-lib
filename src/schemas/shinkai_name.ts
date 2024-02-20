@@ -59,25 +59,16 @@ export class ShinkaiName {
       );
     }
 
-    if (!parts[0].startsWith("@@") || !parts[0].endsWith(".shinkai")) {
-      if (process.env.NODE_ENV !== "test") {
-        console.error(
-          `Node part of the name should start with '@@' and end with '.shinkai'.`
-        );
-      }
-      throw new Error(
-        "Node part of the name should start with '@@' and end with '.shinkai'."
-      );
-    }
-
-    const nodeRegex = /^@@[a-zA-Z0-9_\.]+\.shinkai$/;
+    const nodeRegex = /^@@[a-zA-Z0-9_\.]+(\.shinkai|\.sepolia-shinkai)$/;
     if (!nodeRegex.test(parts[0])) {
       if (process.env.NODE_ENV !== "test") {
         console.error(
-          `Node part of the name contains invalid characters: ${rawName}`
+          `Node part of the name should start with '@@' and end with '.shinkai' or '.sepolia-shinkai': ${rawName}`
         );
       }
-      throw new Error("Node part of the name contains invalid characters.");
+      throw new Error(
+        "Node part of the name should start with '@@' and end with '.shinkai' or '.sepolia-shinkai'."
+      );
     }
 
     const partRegex = /^[a-zA-Z0-9_]*$/;
@@ -124,7 +115,7 @@ export class ShinkaiName {
       if (
         index !== 0 &&
         index !== 2 &&
-        (!partRegex.test(part) || part.includes(".shinkai"))
+        (!partRegex.test(part) || part.includes(".shinkai") || part.includes(".sepolia-shinkai"))
       ) {
         if (process.env.NODE_ENV !== "test") {
           console.error(
@@ -273,7 +264,7 @@ export class ShinkaiName {
   static isValidNodeIdentityNameAndNoSubidentities(name: string): boolean {
     // A node name is valid if it starts with '@@', ends with '.shinkai', and doesn't contain '/'
     return (
-      name.startsWith("@@") && name.endsWith(".shinkai") && !name.includes("/")
+      name.startsWith("@@") && (name.endsWith(".shinkai") || name.endsWith(".sepolia-shinkai")) && !name.includes("/")
     );
   }
 
@@ -341,7 +332,7 @@ export class ShinkaiName {
     if (!nodeName.startsWith("@@")) {
       nodeName = "@@" + nodeName;
     }
-    if (!nodeName.endsWith(".shinkai")) {
+    if (!nodeName.endsWith(".shinkai") && !nodeName.endsWith(".sepolia-shinkai")) {
       nodeName = nodeName + ".shinkai";
     }
     parts[0] = nodeName; // Update the node name part with corrections
