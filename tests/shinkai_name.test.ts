@@ -15,6 +15,16 @@ describe("ShinkaiName", () => {
         },
       ],
       [
+        "@@alice.sepolia-shinkai",
+        {
+          nodeName: "@@alice.sepolia-shinkai",
+          profileName: null,
+          subidentityType: null,
+          subidentityName: null,
+          fullName: "@@alice.sepolia-shinkai",
+        },
+      ],
+      [
         "@@ALICE.SHINKAI",
         {
           nodeName: "@@alice.shinkai",
@@ -52,6 +62,16 @@ describe("ShinkaiName", () => {
           subidentityType: "agent",
           subidentityName: "mychatgptagent",
           fullName: "@@alice.shinkai/profilename/agent/mychatgptagent",
+        },
+      ],
+      [
+        "@@alice.sepolia-shinkai/profileName/agent/myChatGPTAgent",
+        {
+          nodeName: "@@alice.sepolia-shinkai",
+          profileName: "profilename",
+          subidentityType: "agent",
+          subidentityName: "mychatgptagent",
+          fullName: "@@alice.sepolia-shinkai/profilename/agent/mychatgptagent",
         },
       ],
       [
