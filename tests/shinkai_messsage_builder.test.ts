@@ -521,7 +521,9 @@ describe("ShinkaiMessageBuilder pre-made methods", () => {
     const node_receiver_subidentity = "node_receiver_subidentity";
     const scope: JobScope = {
       local: ["bucket1", "bucket2"],
-      vector_fs: ["document1", "document2"],
+      vector_fs_items: [],
+      vector_fs_folders: [],
+      network_folders: [],
     };
 
     const message = await ShinkaiMessageBuilder.jobCreation(
