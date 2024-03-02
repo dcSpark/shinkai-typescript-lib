@@ -32,7 +32,9 @@ export enum MessageSchemaType {
 
 export interface JobScope {
   local: string[];
-  vector_fs: string[];
+  vector_fs_items: [];
+  vector_fs_folders: [];
+  network_folders: [];
 }
 
 export interface JobCreation {
