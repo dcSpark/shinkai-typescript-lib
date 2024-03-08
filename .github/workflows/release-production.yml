@@ -32,9 +32,7 @@ jobs:
 
       - name: Build & Version & Publish NPM
         env:
-          VERSION: ${{ github.ref_name }}
           NPM_TOKEN: ${{ secrets.SHINKAI_PROTOCOL_NPM_TOKEN }}
         run: |
           npm run build
-          npm version ${{ env.VERSION }} --git-tag-version=false
           npm publish
