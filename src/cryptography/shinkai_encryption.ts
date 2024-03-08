@@ -1,7 +1,7 @@
 // import * as ed from "@noble/ed25519";
 import * as ed from "noble-ed25519";
 import { generateKeyPair, sharedKey } from "curve25519-js";
-import { toHexString } from "./crypto_utils";
+import { HexString, toHexString } from "./crypto_utils";
 import { createHash, randomBytes } from "crypto";
 import sodium from "libsodium-wrappers-sumo";
 import { blake3 } from "@noble/hashes/blake3";
@@ -9,9 +9,6 @@ import crypto from "crypto";
 import { ShinkaiData } from "../shinkai_message/shinkai_data";
 import { ShinkaiMessageError } from "./shinkai_signing";
 import { UnencryptedMessageBody } from "../shinkai_message/shinkai_message_body";
-
-export type HexString = string;
-// Previous
 
 export const generateEncryptionKeys = async (
   seed?: Uint8Array
@@ -27,25 +24,6 @@ export const generateEncryptionKeys = async (
   return {
     my_encryption_sk_string,
     my_encryption_pk_string,
-  };
-};
-
-export const generateSignatureKeys = async (
-  seed?: Uint8Array
-): Promise<{
-  my_identity_sk_string: HexString;
-  my_identity_pk_string: HexString;
-}> => {
-  seed = seed || ed.utils.randomPrivateKey();
-  const privKey = new Uint8Array(seed);
-  const pubKey = await ed.getPublicKey(privKey);
-
-  const my_identity_sk_string: string = toHexString(privKey);
-  const my_identity_pk_string: string = toHexString(pubKey);
-
-  return {
-    my_identity_sk_string,
-    my_identity_pk_string,
   };
 };
 

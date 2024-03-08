@@ -1,6 +1,5 @@
 import {
   generateEncryptionKeys,
-  generateSignatureKeys,
 } from "../src/cryptography/shinkai_encryption";
 import {
   JobScope,

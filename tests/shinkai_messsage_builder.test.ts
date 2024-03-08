@@ -1,7 +1,7 @@
 import {
   generateEncryptionKeys,
-  generateSignatureKeys,
 } from "../src/cryptography/shinkai_encryption";
+import { generateSignatureKeys } from "../src/cryptography/shinkai_signing";
 import {
   JobScope,
   MessageSchemaType,
