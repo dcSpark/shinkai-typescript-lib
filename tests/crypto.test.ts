@@ -8,12 +8,12 @@ import {
   encryptMessageData,
   encryptMessageWithPassphrase,
   generateEncryptionKeys,
-  generateSignatureKeys,
 } from "../src/cryptography/shinkai_encryption";
 import { Crypto } from "@peculiar/webcrypto";
 import sodium from "libsodium-wrappers-sumo";
 import { ShinkaiMessage } from "../src/shinkai_message/shinkai_message";
 import {
+  generateSignatureKeys,
   sign_inner_layer,
   sign_outer_layer,
   verify_inner_layer_signature,

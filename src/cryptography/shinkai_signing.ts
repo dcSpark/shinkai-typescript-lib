@@ -3,6 +3,7 @@ import { blake3 } from "@noble/hashes/blake3";
 import { ShinkaiMessage } from "../shinkai_message/shinkai_message";
 import { UnencryptedMessageBody } from "../shinkai_message/shinkai_message_body";
 import { ShinkaiBody } from "../shinkai_message/shinkai_body";
+import { HexString, toHexString } from "./crypto_utils";
 
 // TODO(Nico): move somewhere else
 export class ShinkaiMessageError extends Error {
@@ -11,6 +12,25 @@ export class ShinkaiMessageError extends Error {
     this.name = "ShinkaiMessageError";
   }
 }
+
+export const generateSignatureKeys = async (
+  seed?: Uint8Array
+): Promise<{
+  my_identity_sk_string: HexString;
+  my_identity_pk_string: HexString;
+}> => {
+  seed = seed || ed.utils.randomPrivateKey();
+  const privKey = new Uint8Array(seed);
+  const pubKey = await ed.getPublicKey(privKey);
+
+  const my_identity_sk_string: string = toHexString(privKey);
+  const my_identity_pk_string: string = toHexString(pubKey);
+
+  return {
+    my_identity_sk_string,
+    my_identity_pk_string,
+  };
+};
 
 export async function verify_outer_layer_signature(
   publicKey: Uint8Array,
