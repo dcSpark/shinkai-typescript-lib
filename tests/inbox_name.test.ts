@@ -1,4 +1,4 @@
-import { InboxName } from "../src/schemas/inbox_name";
+import { InboxName, InboxNameError } from "../src/schemas/inbox_name";
 
 describe("InboxName", () => {
   test("valid_inbox_names", () => {
@@ -36,5 +36,30 @@ describe("InboxName", () => {
     }
   });
 
-  // Add other tests here...
+  describe("InboxName getId method", () => {
+    it("extracts SOME_ID correctly for simple inbox format", () => {
+      const inbox = new InboxName("inbox::simpleId::true", false);
+      expect(inbox.getUniqueId()).toBe("simpleId");
+    });
+
+    it("extracts SOME_ID correctly for inbox format with separator in ID", () => {
+      const inbox = new InboxName("inbox::complex::Id::true", false);
+      expect(inbox.getUniqueId()).toBe("complex::Id");
+    });
+
+    it("extracts SOME_ID correctly for simple job_inbox format", () => {
+      const jobInbox = new InboxName("job_inbox::uniqueId::false", false);
+      expect(jobInbox.getUniqueId()).toBe("uniqueId");
+    });
+
+    it("extracts SOME_ID correctly for job_inbox format with separator in ID", () => {
+      const jobInbox = new InboxName("job_inbox::unique::Id::false", false);
+      expect(jobInbox.getUniqueId()).toBe("unique::Id");
+    });
+
+    it("throws an error for invalid inbox name format", () => {
+      const invalidInbox = new InboxName("invalidFormat", false);
+      expect(() => invalidInbox.getUniqueId()).toThrow(InboxNameError);
+    });
+  });
 });
