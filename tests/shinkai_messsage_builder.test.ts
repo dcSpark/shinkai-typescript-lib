@@ -767,8 +767,8 @@ describe("ShinkaiMessageBuilder pre-made methods", () => {
       my_subidentity_signature_sk,
       receiver_public_key,
       symmetric_key_sk,
-      sender_subidentity,
       sender,
+      sender_subidentity,
       receiver
     );
 
