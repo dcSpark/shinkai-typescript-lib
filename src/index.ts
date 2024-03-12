@@ -18,3 +18,4 @@ export * from './shinkai_message/shinkai_message';
 export * from './shinkai_message/shinkai_version';
 
 export * from './shinkai_message_builder/shinkai_message_builder';
+export * from './utils/FileUploaderManager';

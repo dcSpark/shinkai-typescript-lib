@@ -796,10 +796,9 @@ export class ShinkaiMessageBuilder {
     my_subidentity_encryption_sk: EncryptionStaticKey,
     my_subidentity_signature_sk: SignatureStaticKey,
     receiver_public_key: EncryptionPublicKey,
-    inbox: string,
     symmetric_key_sk: string,
-    sender_subidentity: string,
     sender: ProfileName,
+    sender_subidentity: string,
     receiver: ProfileName
   ): Promise<ShinkaiMessage> {
     return new ShinkaiMessageBuilder(
@@ -812,7 +811,7 @@ export class ShinkaiMessageBuilder {
       .set_internal_metadata_with_schema(
         sender_subidentity,
         "",
-        inbox,
+        "",
         MessageSchemaType.SymmetricKeyExchange,
         TSEncryptionMethod.None
       )
@@ -1110,7 +1109,7 @@ export class ShinkaiMessageBuilder {
     receiver: ProfileName,
     receiver_subidentity: string
   ): Promise<ShinkaiMessage> {
-    const createItemsInfo = { destination_path, file_inbox };
+    const createItemsInfo = { path: destination_path, file_inbox };
     return ShinkaiMessageBuilder.createCustomShinkaiMessageToNode(
       my_encryption_secret_key,
       my_signature_secret_key,

@@ -760,17 +760,15 @@ describe("ShinkaiMessageBuilder pre-made methods", () => {
     const sender = "@@sender.shinkai";
     const receiver = "@@receiver.shinkai";
     const sender_subidentity = "sender_subidentity";
-    const inbox = "inbox_name";
     const symmetric_key_sk = "symmetric_key";
 
     const message = await ShinkaiMessageBuilder.createFilesInboxWithSymKey(
       my_subidentity_encryption_sk,
       my_subidentity_signature_sk,
       receiver_public_key,
-      inbox,
       symmetric_key_sk,
-      sender_subidentity,
       sender,
+      sender_subidentity,
       receiver
     );
 

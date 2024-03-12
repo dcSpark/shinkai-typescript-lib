@@ -136,6 +136,22 @@ export class InboxName {
   getValue(): string {
     return this.value;
   }
+
+  getUniqueId(): string {
+    const parts: string[] = this.value.split("::");
+    // Ensure there are at least 3 parts for a valid inbox name
+    if (parts.length < 3) {
+      throw new InboxNameError(`Invalid inbox name format: ${this.value}`);
+    }
+
+    // Remove the first part (inbox type) and the last part (boolean value)
+    const idParts = parts.slice(1, parts.length - 1);
+
+    // Rejoin the remaining parts to form SOME_ID, which may contain '::'
+    const someId = idParts.join("::");
+
+    return someId;
+  }
 }
 
 export class RegularInbox extends InboxName {
