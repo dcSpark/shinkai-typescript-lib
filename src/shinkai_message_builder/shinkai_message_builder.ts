@@ -1109,7 +1109,7 @@ export class ShinkaiMessageBuilder {
     receiver: ProfileName,
     receiver_subidentity: string
   ): Promise<ShinkaiMessage> {
-    const createItemsInfo = { destination_path, file_inbox };
+    const createItemsInfo = { path: destination_path, file_inbox };
     return ShinkaiMessageBuilder.createCustomShinkaiMessageToNode(
       my_encryption_secret_key,
       my_signature_secret_key,
