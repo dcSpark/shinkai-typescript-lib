@@ -9,9 +9,11 @@ import {
 } from "../cryptography/shinkai_signing";
 import { InboxName } from "../schemas/inbox_name";
 import {
+  APICreateShareableFolder,
   JobScope,
   MessageSchemaType,
   SerializedAgent,
+  SubscriptionPayment,
   TSEncryptionMethod,
 } from "../schemas/schema_types";
 import { ShinkaiBody } from "../shinkai_message/shinkai_body";
@@ -1191,6 +1193,141 @@ export class ShinkaiMessageBuilder {
       sender,
       receiver,
       MessageSchemaType.VecFsRetrieveVectorSearchSimplifiedJson
+    );
+  }
+
+  public static async subscriptionsCreateShareFolder(
+    payload: APICreateShareableFolder,
+    my_encryption_secret_key: EncryptionStaticKey,
+    my_signature_secret_key: SignatureStaticKey,
+    receiver_public_key: EncryptionPublicKey,
+    sender: ProfileName,
+    sender_subidentity: string,
+    node_receiver: ProfileName,
+    node_receiver_subidentity: string
+  ): Promise<ShinkaiMessage> {
+    return this.createCustomShinkaiMessageToNode(
+      my_encryption_secret_key,
+      my_signature_secret_key,
+      receiver_public_key,
+      payload,
+      sender_subidentity,
+      sender,
+      node_receiver,
+      MessageSchemaType.CreateShareableFolder
+    );
+  }
+
+  public static async subscriptionAvailableSharedItems(
+    path: string | null,
+    streamer_node_name: string,
+    streamer_profile_name: string,
+    my_encryption_secret_key: EncryptionStaticKey,
+    my_signature_secret_key: SignatureStaticKey,
+    receiver_public_key: EncryptionPublicKey,
+    sender: ProfileName,
+    sender_subidentity: string,
+    node_receiver: ProfileName,
+    node_receiver_subidentity: string
+  ): Promise<ShinkaiMessage> {
+    const payload = {
+      path: path || "/",
+      streamer_node_name,
+      streamer_profile_name,
+    };
+
+    return this.createCustomShinkaiMessageToNode(
+      my_encryption_secret_key,
+      my_signature_secret_key,
+      receiver_public_key,
+      payload,
+      sender_subidentity,
+      sender,
+      node_receiver,
+      MessageSchemaType.AvailableSharedItems
+    );
+  }
+
+  public static async vecfsSubscribeToSharedFolder(
+    shared_folder: string,
+    requirements: SubscriptionPayment,
+    streamer_node: string,
+    streamer_profile: string,
+    my_encryption_secret_key: EncryptionStaticKey,
+    my_signature_secret_key: SignatureStaticKey,
+    receiver_public_key: EncryptionPublicKey,
+    sender: ProfileName,
+    sender_subidentity: string,
+    node_receiver: ProfileName,
+    node_receiver_subidentity: string
+  ): Promise<ShinkaiMessage> {
+    const payload = {
+      path: shared_folder,
+      streamer_node_name: streamer_node,
+      streamer_profile_name: streamer_profile,
+      payment: requirements,
+    };
+
+    return this.createCustomShinkaiMessageToNode(
+      my_encryption_secret_key,
+      my_signature_secret_key,
+      receiver_public_key,
+      payload,
+      sender_subidentity,
+      sender,
+      node_receiver,
+      MessageSchemaType.SubscribeToSharedFolder
+    );
+  }
+
+  public static async vecfsUnsubscribeToSharedFolder(
+    shared_folder: string,
+    streamer_node: string,
+    streamer_profile: string,
+    my_encryption_secret_key: EncryptionStaticKey,
+    my_signature_secret_key: SignatureStaticKey,
+    receiver_public_key: EncryptionPublicKey,
+    sender: ProfileName,
+    sender_subidentity: string,
+    node_receiver: ProfileName,
+    node_receiver_subidentity: string
+  ): Promise<ShinkaiMessage> {
+    const payload = {
+      path: shared_folder,
+      streamer_node_name: streamer_node,
+      streamer_profile_name: streamer_profile,
+    };
+  
+    return this.createCustomShinkaiMessageToNode(
+      my_encryption_secret_key,
+      my_signature_secret_key,
+      receiver_public_key,
+      payload,
+      sender_subidentity,
+      sender,
+      node_receiver,
+      MessageSchemaType.UnsubscribeToSharedFolder
+    );
+  }
+
+  public static async mySubscriptions(
+    my_encryption_secret_key: EncryptionStaticKey,
+    my_signature_secret_key: SignatureStaticKey,
+    receiver_public_key: EncryptionPublicKey,
+    sender: ProfileName,
+    sender_subidentity: string,
+    node_receiver: ProfileName,
+    node_receiver_subidentity: string
+  ): Promise<ShinkaiMessage> {
+    return this.createCustomShinkaiMessageToNode(
+      my_encryption_secret_key,
+      my_signature_secret_key,
+      receiver_public_key,
+      "", // Empty payload as per Rust code comment
+      sender_subidentity,
+      sender,
+      node_receiver,
+      MessageSchemaType.MySubscriptions
     );
   }
 }
