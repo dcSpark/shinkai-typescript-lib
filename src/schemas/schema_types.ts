@@ -28,6 +28,11 @@ export enum MessageSchemaType {
   VecFsMoveItem = "VecFsMoveItem",
   VecFsCopyItem = "VecFsCopyItem",
   ConvertFilesAndSaveToFolder = "ConvertFilesAndSaveToFolder",
+  CreateShareableFolder = "CreateShareableFolder",
+  AvailableSharedItems = "AvailableSharedItems",
+  SubscribeToSharedFolder = "SubscribeToSharedFolder",
+  UnsubscribeToSharedFolder = "UnsubscribeToSharedFolder",
+  MySubscriptions = "MySubscriptions",
 }
 
 export interface JobScope {
@@ -87,12 +92,16 @@ export interface SerializedAgent {
 }
 export interface AgentAPIModel {
   OpenAI?: OpenAI;
+  ClaudeAI?: ClaudeAI;
   GenericAPI?: GenericAPI;
   Ollama?: Ollama;
   ShinkaiBackend?: ShinkaiBackend;
   LocalLLM?: LocalLLM;
 }
 
+export interface ClaudeAI {
+  model_type: string;
+}
 export interface OpenAI {
   model_type: string;
 }
@@ -200,4 +209,26 @@ export interface WSMessageResponse {
 export enum WSTopic {
   Inbox = "inbox",
   SmartInboxes = "smart_inboxes",
+}
+
+export interface APICreateShareableFolder {
+  path: string;
+  subscription_req: FolderSubscription;
+}
+
+export interface FolderSubscription {
+  minimum_token_delegation?: number;
+  minimum_time_delegated_hours?: number;
+  monthly_payment?: PaymentOption;
+  is_free: boolean;
+}
+
+export type PaymentOption = 
+  | { type: 'USD', amount: number }
+  | { type: 'KAITokens', amount: number };
+
+export enum SubscriptionPayment {
+  Free = "Free",
+  DirectDelegation = "DirectDelegation",
+  Payment = "Payment",
 }
