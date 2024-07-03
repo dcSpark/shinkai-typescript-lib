@@ -63,11 +63,11 @@ export class ShinkaiName {
     if (!nodeRegex.test(parts[0])) {
       if (process.env.NODE_ENV !== "test") {
         console.error(
-          `Node part of the name should start with '@@' and end with '.shinkai' or '.sepolia-shinkai': ${rawName}`
+          `Node part of the name should start with '@@' and end with '.shinkai' or '.sepolia-shinkai' or '.arb-sep-shinkai': ${rawName}`
         );
       }
       throw new Error(
-        "Node part of the name should start with '@@' and end with '.shinkai' or '.sepolia-shinkai'."
+        "Node part of the name should start with '@@' and end with '.shinkai' or '.sepolia-shinkai' or '.arb-sep-shinkai'."
       );
     }
 
@@ -115,7 +115,7 @@ export class ShinkaiName {
       if (
         index !== 0 &&
         index !== 2 &&
-        (!partRegex.test(part) || part.includes(".shinkai") || part.includes(".sepolia-shinkai"))
+        (!partRegex.test(part) || part.includes(".shinkai") || part.includes(".sepolia-shinkai") || part.includes(".arb-sep-shinkai"))
       ) {
         if (process.env.NODE_ENV !== "test") {
           console.error(
@@ -264,7 +264,7 @@ export class ShinkaiName {
   static isValidNodeIdentityNameAndNoSubidentities(name: string): boolean {
     // A node name is valid if it starts with '@@', ends with '.shinkai', and doesn't contain '/'
     return (
-      name.startsWith("@@") && (name.endsWith(".shinkai") || name.endsWith(".sepolia-shinkai")) && !name.includes("/")
+      name.startsWith("@@") && (name.endsWith(".shinkai") || name.endsWith(".sepolia-shinkai") || name.endsWith(".arb-sep-shinkai")) && !name.includes("/")
     );
   }
 
@@ -332,7 +332,7 @@ export class ShinkaiName {
     if (!nodeName.startsWith("@@")) {
       nodeName = "@@" + nodeName;
     }
-    if (!nodeName.endsWith(".shinkai") && !nodeName.endsWith(".sepolia-shinkai")) {
+    if (!nodeName.endsWith(".shinkai") && !nodeName.endsWith(".sepolia-shinkai") && !nodeName.endsWith(".arb-sep-shinkai")) {
       nodeName = nodeName + ".shinkai";
     }
     parts[0] = nodeName; // Update the node name part with corrections
