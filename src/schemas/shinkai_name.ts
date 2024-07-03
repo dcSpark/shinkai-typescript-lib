@@ -59,7 +59,7 @@ export class ShinkaiName {
       );
     }
 
-    const nodeRegex = /^@@[a-zA-Z0-9_\.]+(\.shinkai|\.sepolia-shinkai)$/;
+    const nodeRegex = /^@@[a-zA-Z0-9_\.]+(\.shinkai|\.sepolia-shinkai|\.arb-sep-shinkai)$/;
     if (!nodeRegex.test(parts[0])) {
       if (process.env.NODE_ENV !== "test") {
         console.error(
