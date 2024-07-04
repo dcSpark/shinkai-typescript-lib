@@ -1,4 +1,4 @@
-import * as ed from "noble-ed25519";
+import { ed25519 } from "@noble/curves/ed25519";
 import { blake3 } from "@noble/hashes/blake3";
 import { ShinkaiMessage } from "../shinkai_message/shinkai_message";
 import { UnencryptedMessageBody } from "../shinkai_message/shinkai_message_body";
@@ -19,9 +19,9 @@ export const generateSignatureKeys = async (
   my_identity_sk_string: HexString;
   my_identity_pk_string: HexString;
 }> => {
-  seed = seed || ed.utils.randomPrivateKey();
+  seed = seed || ed25519.utils.randomPrivateKey();
   const privKey = new Uint8Array(seed);
-  const pubKey = await ed.getPublicKey(privKey);
+  const pubKey = await ed25519.getPublicKey(privKey);
 
   const my_identity_sk_string: string = toHexString(privKey);
   const my_identity_pk_string: string = toHexString(pubKey);
@@ -64,7 +64,7 @@ export async function verify_outer_layer_signature(
       messageHashMatched.map((byte) => parseInt(byte, 16))
     );
 
-    return await ed.verify(signatureBytes, messageHashBytes, publicKey);
+    return await ed25519.verify(signatureBytes, messageHashBytes, publicKey);
   } catch (e) {
     if (e instanceof Error) {
       throw new ShinkaiMessageError(`Signing error: ${e.message}`);
@@ -93,7 +93,7 @@ export async function sign_outer_layer(
       messageHashMatched.map((byte) => parseInt(byte, 16))
     );
 
-    const signature = await ed.sign(messageHashBytes, secretKey);
+    const signature = await ed25519.sign(messageHashBytes, secretKey);
     shinkaiMessage.external_metadata.signature = Array.from(signature)
       .map((b) => b.toString(16).padStart(2, "0"))
       .join("");
@@ -125,7 +125,7 @@ export async function sign_inner_layer(
       messageHashMatched.map((byte) => parseInt(byte, 16))
     );
 
-    const signature = await ed.sign(messageHashBytes, secretKey);
+    const signature = await ed25519.sign(messageHashBytes, secretKey);
     shinkaiBody.internal_metadata.signature = Array.from(signature)
       .map((b) => b.toString(16).padStart(2, "0"))
       .join("");
@@ -172,7 +172,7 @@ export async function verify_inner_layer_signature(
       bodyHashMatched.map((byte) => parseInt(byte, 16))
     );
 
-    return await ed.verify(signatureBytes, messageHashBytes, publicKey);
+    return await ed25519.verify(signatureBytes, messageHashBytes, publicKey);
   } catch (e) {
     if (e instanceof Error) {
       throw new ShinkaiMessageError(`Signing error: ${e.message}`);

@@ -1,8 +1,5 @@
-// import * as ed from "@noble/ed25519";
-import * as ed from "noble-ed25519";
 import { generateKeyPair, sharedKey } from "curve25519-js";
 import { HexString, toHexString } from "./crypto_utils";
-import { createHash, randomBytes } from "crypto";
 import sodium from "libsodium-wrappers-sumo";
 import { blake3 } from "@noble/hashes/blake3";
 import crypto from "crypto";
