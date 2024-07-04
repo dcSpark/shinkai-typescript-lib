@@ -32,7 +32,7 @@ import {
   UnencryptedMessageData,
 } from "../shinkai_message/shinkai_message_data";
 import { ShinkaiVersion } from "../shinkai_message/shinkai_version";
-import * as ed from "noble-ed25519";
+import { ed25519 } from "@noble/curves/ed25519";
 
 export type ProfileName = string;
 export type EncryptionStaticKey = Uint8Array;
@@ -73,7 +73,7 @@ export class ShinkaiMessageBuilder {
   }
 
   async init(): Promise<this> {
-    this.my_signature_public_key = await ed.getPublicKey(
+    this.my_signature_public_key = await ed25519.getPublicKey(
       this.my_signature_secret_key
     );
     return this;
@@ -641,7 +641,7 @@ export class ShinkaiMessageBuilder {
     sender: ProfileName,
     receiver: ProfileName
   ): Promise<ShinkaiMessage> {
-    const profile_signature_pk = await ed.getPublicKey(profile_signature_sk);
+    const profile_signature_pk = await ed25519.getPublicKey(profile_signature_sk);
     const profile_encryption_pk = nacl.box.keyPair.fromSecretKey(
       profile_encryption_sk
     ).publicKey;
@@ -687,13 +687,13 @@ export class ShinkaiMessageBuilder {
     sender: ProfileName,
     receiver: ProfileName
   ): Promise<ShinkaiMessage> {
-    const my_device_signature_pk = await ed.getPublicKey(
+    const my_device_signature_pk = await ed25519.getPublicKey(
       my_device_signature_sk
     );
     const my_device_encryption_pk = nacl.box.keyPair.fromSecretKey(
       my_device_encryption_sk
     ).publicKey;
-    const profile_signature_pk = await ed.getPublicKey(profile_signature_sk);
+    const profile_signature_pk = await ed25519.getPublicKey(profile_signature_sk);
     const profile_encryption_pk = nacl.box.keyPair.fromSecretKey(
       profile_encryption_sk
     ).publicKey;
@@ -740,13 +740,13 @@ export class ShinkaiMessageBuilder {
     sender: ProfileName,
     receiver: ProfileName
   ): Promise<ShinkaiMessage> {
-    const my_device_signature_pk = await ed.getPublicKey(
+    const my_device_signature_pk = await ed25519.getPublicKey(
       my_device_signature_sk
     );
     const my_device_encryption_pk = nacl.box.keyPair.fromSecretKey(
       my_device_encryption_sk
     ).publicKey;
-    const profile_signature_pk = await ed.getPublicKey(profile_signature_sk);
+    const profile_signature_pk = await ed25519.getPublicKey(profile_signature_sk);
     const profile_encryption_pk = nacl.box.keyPair.fromSecretKey(
       profile_encryption_sk
     ).publicKey;
