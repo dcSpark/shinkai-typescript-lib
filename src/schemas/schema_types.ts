@@ -36,14 +36,16 @@ export enum MessageSchemaType {
 }
 
 export interface JobScope {
-  local: string[];
+  local_vrkai: string[];
+  local_vrpack: string[];
   vector_fs_items: [];
-  vector_fs_folders: [];
+  vector_fs_folders: VectorFSFolderScopeEntry[];
   network_folders: [];
 }
 
 export interface JobCreation {
   scope: JobScope;
+  is_hidden?: boolean;
 }
 
 export interface JobMessage {
@@ -221,6 +223,11 @@ export interface FolderSubscription {
   minimum_time_delegated_hours?: number;
   monthly_payment?: PaymentOption;
   is_free: boolean;
+}
+
+export interface VectorFSFolderScopeEntry {
+  name: string;
+  path: string;
 }
 
 export type PaymentOption = 

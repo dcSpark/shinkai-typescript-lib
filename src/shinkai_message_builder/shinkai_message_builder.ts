@@ -467,6 +467,7 @@ export class ShinkaiMessageBuilder {
 
   public static async jobCreation(
     scope: JobScope,
+    is_hidden: boolean | undefined,
     my_encryption_secret_key: EncryptionStaticKey,
     my_signature_secret_key: SignatureStaticKey,
     receiver_public_key: EncryptionPublicKey,
@@ -475,7 +476,7 @@ export class ShinkaiMessageBuilder {
     node_receiver: ProfileName,
     node_receiver_subidentity: string
   ): Promise<ShinkaiMessage> {
-    const jobCreation = { scope };
+    const jobCreation = { scope, is_hidden };
     const body = JSON.stringify(jobCreation);
 
     return new ShinkaiMessageBuilder(
@@ -512,7 +513,14 @@ export class ShinkaiMessageBuilder {
     node_receiver: ProfileName,
     node_receiver_subidentity: string
   ): Promise<ShinkaiMessage> {
-    const jobMessage = { job_id, content, files_inbox, parent: parent || "" };
+    const jobMessage = {
+      job_id,
+      content,
+      files_inbox,
+      parent: parent || '',
+      workflow_code: null,
+      workflow_name: null,
+    };
     const body = JSON.stringify(jobMessage);
     const inbox = InboxName.getJobInboxNameFromParams(job_id).value;
 
