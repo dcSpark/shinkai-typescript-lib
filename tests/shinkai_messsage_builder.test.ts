@@ -126,6 +126,8 @@ describe("ShinkaiMessageBuilder pre-made methods", () => {
       content: text,
       files_inbox: "",
       parent: "",
+      workflow_code: null,
+      workflow_name: null,
     });
 
     const jobMessage = await ShinkaiMessageBuilder.jobMessage(
@@ -520,7 +522,8 @@ describe("ShinkaiMessageBuilder pre-made methods", () => {
     const sender_subidentity = "sender_subidentity";
     const node_receiver_subidentity = "node_receiver_subidentity";
     const scope: JobScope = {
-      local: ["bucket1", "bucket2"],
+      local_vrkai: ["bucket1", "bucket2"],
+      local_vrpack: [],
       vector_fs_items: [],
       vector_fs_folders: [],
       network_folders: [],
@@ -528,6 +531,7 @@ describe("ShinkaiMessageBuilder pre-made methods", () => {
 
     const message = await ShinkaiMessageBuilder.jobCreation(
       scope,
+      false,
       my_encryption_secret_key,
       my_signature_secret_key,
       receiver_public_key,
